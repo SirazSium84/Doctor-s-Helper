@@ -216,7 +216,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-For support, email siraz.sium@example.com or create an issue in this repository.
+For support, email szsium@gmail.com or create an issue in this repository.
 
 ---
 
