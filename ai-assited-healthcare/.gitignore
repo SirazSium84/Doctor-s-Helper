@@ -8,3 +8,9 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.test
