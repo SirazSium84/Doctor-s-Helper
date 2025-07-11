@@ -182,58 +182,7 @@ export function WelcomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="p-8 space-y-8 max-w-[1600px] mx-auto">
-        {/* Professional Header */}
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-xl p-8 shadow-2xl">
-          <div className="flex items-start justify-between gap-8 mb-8">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-emerald-600/20 rounded-lg">
-                  <Heart className="h-6 w-6 text-emerald-400" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-white tracking-tight">Healthcare Dashboard</h1>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                    <p className="text-gray-300 font-medium">Comprehensive Patient Care Overview</p>
-                  </div>
-                </div>
-              </div>
-              <p className="text-gray-400 leading-relaxed max-w-2xl">
-                Real-time insights into patient populations, treatment outcomes, and program effectiveness across our integrated healthcare system
-              </p>
-            </div>
-            
-            {/* Quick Stats Panel */}
-            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 shadow-lg min-w-[300px]">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-1.5 bg-gray-700 rounded-md">
-                  <Target className="h-4 w-4 text-gray-300" />
-                </div>
-                <h3 className="font-semibold text-white">System Overview</h3>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300">Active Programs</span>
-                  <span className="text-sm font-semibold text-white">{Object.keys(programData).length}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300">Completion Rate</span>
-                  <span className="text-sm font-semibold text-emerald-400">
-                    {patients.length > 0 ? Math.round((dischargeData['Successfully Completed'] || dischargeData['completed'] || 0) / patients.length * 100) : 0}%
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300">System Status</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                    <span className="text-sm font-semibold text-emerald-400">Operational</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+
 
         {/* Enhanced Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

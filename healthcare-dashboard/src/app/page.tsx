@@ -15,13 +15,13 @@ import { PHPEmotionalAnalyticsPage } from "@/components/pages/php-emotional-anal
 import { Home, BarChart3, Radar, BoxSelect, TrendingUp, User, Calendar, Heart, Brain } from "lucide-react"
 
 const tabs = [
-  { id: "welcome", label: "Welcome", icon: <Home className="w-4 h-4" /> },
-  { id: "scores", label: "Assessment Scores", icon: <BarChart3 className="w-4 h-4" /> },
-  { id: "spider", label: "Spider Chart", icon: <Radar className="w-4 h-4" /> },
-  { id: "boxplots", label: "Box Plots", icon: <BoxSelect className="w-4 h-4" /> },
-  { id: "risk", label: "Risk Analysis", icon: <TrendingUp className="w-4 h-4" /> },
-  { id: "bps", label: "Biopsychosocial", icon: <User className="w-4 h-4" /> },
-  { id: "php", label: "PHP Emotional Analytics", icon: <Brain className="w-4 h-4" /> },
+  { id: "welcome", label: "Clinical Overview", icon: <Home className="w-4 h-4" /> },
+  { id: "scores", label: "Patient Assessments", icon: <BarChart3 className="w-4 h-4" /> },
+  { id: "spider", label: "Multi-Domain Analysis", icon: <Radar className="w-4 h-4" /> },
+  { id: "boxplots", label: "Statistical Analysis", icon: <BoxSelect className="w-4 h-4" /> },
+  { id: "risk", label: "Risk Stratification", icon: <TrendingUp className="w-4 h-4" /> },
+  { id: "bps", label: "BPS Assessment", icon: <User className="w-4 h-4" /> },
+  { id: "php", label: "Behavioral Health Analytics", icon: <Brain className="w-4 h-4" /> },
   { id: "ahcm", label: "AHCM", icon: <Heart className="w-4 h-4" /> },
 ]
 
