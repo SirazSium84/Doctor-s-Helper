@@ -5,6 +5,7 @@ import type {
   BPSAssessment,
   PHPDailyAssessment,
   AHCMAssessment,
+  SubstanceHistory,
   ViewMode,
 } from "@/types/assessments"
 
@@ -19,6 +20,7 @@ interface DashboardState {
   patients: Patient[]
   assessmentScores: AssessmentScore[]
   bpsAssessments: BPSAssessment[]
+  substanceHistory: SubstanceHistory[]
   phpDailyAssessments: PHPDailyAssessment[]
   ahcmAssessments: AHCMAssessment[]
   dashboardStats: DashboardStats
@@ -29,6 +31,7 @@ interface DashboardState {
   setPatients: (patients: Patient[]) => void
   setAssessmentScores: (scores: AssessmentScore[]) => void
   setBPSAssessments: (assessments: BPSAssessment[]) => void
+  setSubstanceHistory: (history: SubstanceHistory[]) => void
   setPHPDailyAssessments: (assessments: PHPDailyAssessment[]) => void
   setAHCMAssessments: (assessments: AHCMAssessment[]) => void
   setDashboardStats: (stats: DashboardStats) => void
@@ -38,6 +41,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   patients: [],
   assessmentScores: [],
   bpsAssessments: [],
+  substanceHistory: [],
   phpDailyAssessments: [],
   ahcmAssessments: [],
   dashboardStats: {
@@ -53,6 +57,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   setPatients: (patients) => set({ patients }),
   setAssessmentScores: (scores) => set({ assessmentScores: scores }),
   setBPSAssessments: (assessments) => set({ bpsAssessments: assessments }),
+  setSubstanceHistory: (history) => set({ substanceHistory: history }),
   setPHPDailyAssessments: (assessments) => set({ phpDailyAssessments: assessments }),
   setAHCMAssessments: (assessments) => set({ ahcmAssessments: assessments }),
   setDashboardStats: (stats) => set({ dashboardStats: stats }),

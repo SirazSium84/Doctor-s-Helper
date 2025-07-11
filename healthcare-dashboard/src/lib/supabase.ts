@@ -113,4 +113,74 @@ export interface DERSAssessment {
   ders_q34_figure_out?: number
   ders_q35_long_time_better?: number
   ders_q36_emotions_overwhelming?: number
+}
+
+export interface PatientSubstanceHistory {
+  group_identifier: string
+  substance: string
+  use_flag: number
+  pattern_of_use?: string
+  pattern_of_use_consolidated?: string
+}
+
+export interface BPSAssessment {
+  group_identifier: string
+  assmt_dt?: string
+  birthdate?: string
+  age?: number
+  ext_motivation?: string
+  int_motivation?: any // JSONB
+  num_prev_treatments?: string
+  drugs_of_choice?: any // JSONB
+  drug_craving_score?: number
+  bps_problems?: number
+  bps_medical?: string
+  bps_employment?: number
+  bps_peer_support?: number
+  bps_drug_alcohol?: number
+  bps_legal?: string
+  bps_family?: number
+  bps_mh?: number
+  bps_total?: number
+}
+
+export interface PHPSupabaseRow {
+  unique_id: string
+  group_identifier: string
+  assessment_date: string
+  matched_emotion_words?: string
+  match_skill_words?: string
+  match_support_words?: string
+  craving?: string
+  // Emotional states
+  pain?: boolean
+  sad?: boolean
+  content?: boolean
+  anger?: boolean
+  shame?: boolean
+  fear?: boolean
+  joy?: boolean
+  anxiety?: boolean
+  depressed?: boolean
+  alone?: boolean
+  // Coping skills
+  mindfulnessmeditation?: boolean
+  distress_tolerance?: boolean
+  opposite_action?: boolean
+  take_my_meds?: boolean
+  ask_for_help?: boolean
+  improve_moment?: boolean
+  parts_work?: boolean
+  play_the_tape_thru?: boolean
+  values?: boolean
+  // Self-care activities
+  sleep?: boolean
+  nutrition?: boolean
+  exercise?: boolean
+  fun?: boolean
+  connection?: boolean
+  warmth?: boolean
+  water?: boolean
+  love?: boolean
+  therapy?: boolean
 } 

@@ -10,7 +10,9 @@ import { WelcomePage } from "@/components/pages/welcome-page"
 import { AssessmentScoresPage } from "@/components/pages/assessment-scores-page"
 import { SpiderChartPage } from "@/components/pages/spider-chart-page"
 import { RiskAnalysisPage } from "@/components/pages/risk-analysis-page"
-import { Home, BarChart3, Radar, BoxSelect, TrendingUp, User, Calendar, Heart } from "lucide-react"
+import { BiopsychosocialPage } from "@/components/pages/biopsychosocial-page"
+import { PHPEmotionalAnalyticsPage } from "@/components/pages/php-emotional-analytics-page"
+import { Home, BarChart3, Radar, BoxSelect, TrendingUp, User, Calendar, Heart, Brain } from "lucide-react"
 
 const tabs = [
   { id: "welcome", label: "Welcome", icon: <Home className="w-4 h-4" /> },
@@ -19,63 +21,87 @@ const tabs = [
   { id: "boxplots", label: "Box Plots", icon: <BoxSelect className="w-4 h-4" /> },
   { id: "risk", label: "Risk Analysis", icon: <TrendingUp className="w-4 h-4" /> },
   { id: "bps", label: "Biopsychosocial", icon: <User className="w-4 h-4" /> },
-  { id: "php", label: "PHP Daily", icon: <Calendar className="w-4 h-4" /> },
+  { id: "php", label: "PHP Emotional Analytics", icon: <Brain className="w-4 h-4" /> },
   { id: "ahcm", label: "AHCM", icon: <Heart className="w-4 h-4" /> },
 ]
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("welcome")
-  // No loading state needed since we load data immediately
+  const { 
+    setPatients, 
+    setAssessmentScores, 
+    setBPSAssessments, 
+    setSubstanceHistory,
+    setPHPDailyAssessments, 
+    setAHCMAssessments, 
+    setDashboardStats 
+  } = useDashboardStore()
 
-  const { setPatients, setAssessmentScores, setBPSAssessments, setPHPDailyAssessments, setAHCMAssessments, setDashboardStats } =
-    useDashboardStore()
-
-    useEffect(() => {
-    // Load data in the background after component mounts
+  useEffect(() => {
     const loadData = async () => {
       try {
-        console.log('🚀 Loading data from Supabase...')
+        console.log('🚀 Loading dashboard data from Supabase...')
         
-        // Fetch accurate dashboard statistics first
-        console.log('📊 Fetching dashboard statistics...')
-        const stats = await supabaseService.getDashboardStats()
-        console.log(`📈 Dashboard stats:`, stats)
-        setDashboardStats(stats)
-        
-        // Fetch patients directly from Supabase
-        console.log('👥 Fetching patients from Supabase...')
-        const patients = await supabaseService.getPatients()
-        console.log(`✅ Fetched ${patients.length} patients`)
+        // Load all data concurrently for better performance
+        const [patients, assessments, stats] = await Promise.all([
+          supabaseService.getPatients(),
+          supabaseService.getAllAssessments(),
+          supabaseService.getDashboardStats()
+        ])
+
+        // Set basic data first
         setPatients(patients)
-        
-        // Fetch detailed assessments in the background
-        console.log('⏰ Starting background assessment loading...')
-        setTimeout(async () => {
-          try {
-            const assessments = await supabaseService.getAllAssessments()
-            console.log(`📋 Fetched ${assessments.length} detailed assessments for charts`)
-            setAssessmentScores(assessments)
-          } catch (error) {
-            console.error('❌ Background assessment fetching failed:', error)
-          }
-        }, 500) // Small delay to let UI render first
-        
-        // Other assessment types will be empty for now (can be implemented later)
+        setAssessmentScores(assessments)
+        setDashboardStats(stats)
+
+        // Load substance history from multiple sources
+        console.log('🔍 Loading substance history data...')
+        try {
+          const [substanceHistory, bpsSubstanceData] = await Promise.all([
+            supabaseService.getSubstanceHistory(),
+            supabaseService.getBPSSubstanceData()
+          ])
+
+          // Combine both data sources, preferring Patient Substance History table
+          const combinedSubstanceHistory = [...substanceHistory]
+          
+          // Add BPS data for patients not in Patient Substance History
+          const existingPatients = new Set(substanceHistory.map(item => item.patientId))
+          bpsSubstanceData.forEach(item => {
+            if (!existingPatients.has(item.patientId)) {
+              combinedSubstanceHistory.push(item)
+            }
+          })
+
+          setSubstanceHistory(combinedSubstanceHistory)
+          console.log(`✅ Loaded substance history: ${substanceHistory.length} from Patient Substance History, ${bpsSubstanceData.length} from BPS, ${combinedSubstanceHistory.length} total`)
+        } catch (substanceError) {
+          console.error('❌ Error loading substance history:', substanceError)
+          setSubstanceHistory([])
+        }
+
+        // For now, use empty arrays for BPS, PHP, and AHCM assessments
+        // These can be replaced with actual Supabase calls when needed
         setBPSAssessments([])
         setPHPDailyAssessments([])
         setAHCMAssessments([])
-        
-        console.log(`🎉 Data loading completed successfully`)
+
+        console.log(`🎉 Dashboard data loading completed: ${patients.length} patients, ${assessments.length} assessments`)
       } catch (error) {
-        console.error('💥 Error loading data from Supabase:', error)
-        // Fallback to empty state but still allow dashboard to load
+        console.error('💥 Error loading dashboard data:', error)
+        // Set empty states to prevent UI crashes
         setPatients([])
+        setAssessmentScores([])
+        setSubstanceHistory([])
+        setBPSAssessments([])
+        setPHPDailyAssessments([])
+        setAHCMAssessments([])
       }
     }
 
     // Start loading data after a short delay to allow UI to render
     setTimeout(loadData, 100)
-  }, [setPatients, setAssessmentScores, setBPSAssessments, setPHPDailyAssessments, setAHCMAssessments, setDashboardStats])
+  }, [setPatients, setAssessmentScores, setBPSAssessments, setSubstanceHistory, setPHPDailyAssessments, setAHCMAssessments, setDashboardStats])
 
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -98,32 +124,16 @@ export default function Dashboard() {
       case "risk":
         return <RiskAnalysisPage />
       case "bps":
-        return (
-          <div className="flex items-center justify-center h-96 text-gray-400">
-            <div className="text-center">
-              <User className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">Biopsychosocial Assessment Coming Soon</p>
-              <p className="text-sm">Individual patient BPS scores and substance use history</p>
-            </div>
-          </div>
-        )
+        return <BiopsychosocialPage />
       case "php":
-        return (
-          <div className="flex items-center justify-center h-96 text-gray-400">
-            <div className="text-center">
-              <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">PHP Daily Assessments Coming Soon</p>
-              <p className="text-sm">Daily assessment tracking with wordclouds</p>
-            </div>
-          </div>
-        )
+        return <PHPEmotionalAnalyticsPage />
       case "ahcm":
         return (
           <div className="flex items-center justify-center h-96 text-gray-400">
             <div className="text-center">
               <Heart className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">AHCM Assessment Coming Soon</p>
-              <p className="text-sm">Social determinants of health analysis</p>
+              <p className="text-lg">AHCM Coming Soon</p>
+              <p className="text-sm">Advanced Healthcare Case Management analytics</p>
             </div>
           </div>
         )
@@ -140,8 +150,8 @@ export default function Dashboard() {
       <NavigationTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="container mx-auto px-6 py-6">
-        {/* Only show PatientSelector with view mode for non-welcome pages */}
-        {activeTab !== "welcome" && (
+        {/* Only show PatientSelector with view mode for specific pages that need it */}
+        {activeTab !== "welcome" && activeTab !== "bps" && activeTab !== "php" && (
           <div className="mb-6">
             <PatientSelector showViewMode={true} currentTab={activeTab} />
           </div>
