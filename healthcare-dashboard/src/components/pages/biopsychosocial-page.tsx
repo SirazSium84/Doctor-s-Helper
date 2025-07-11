@@ -3,6 +3,7 @@
 import { useDashboardStore } from "@/store/dashboard-store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { PatientSelector } from "@/components/patient-selector"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, PolarGrid } from "recharts"
 import { useMemo, useState, useCallback } from "react"
 import { ArrowLeft, Users, TrendingUp, AlertTriangle, Info, ChevronRight, Database, BarChart3 } from "lucide-react"
@@ -287,53 +288,152 @@ export function BiopsychosocialPage() {
       {/* Header Card */}
       <Card className="bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 border border-gray-700/50 shadow-2xl">
         <CardHeader className="pb-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <CardTitle className="text-white text-2xl font-bold flex items-center gap-3">
-                <div className="flex items-center gap-3">
-                  <Users className="w-7 h-7 text-blue-400" />
-                  <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
-                    {selectedSubstance 
-                      ? `${selectedSubstance} Usage Patterns` 
-                      : "Substance Use Analysis"
-                    }
-                  </span>
+          {/* Top Section: Title and Patient Selector */}
+          <div className="flex items-start justify-between gap-8 mb-6">
+            <div className="flex-1">
+              <CardTitle className="text-white text-3xl font-bold flex items-center gap-3 mb-3">
+                <div className="p-2 bg-blue-600/20 rounded-lg">
+                  <Users className="w-6 h-6 text-blue-400" />
                 </div>
-                {viewMode === "individual" && selectedPatient && (
-                  <Badge variant="outline" className="text-blue-400 border-blue-400/50 bg-blue-500/10">
-                    {getPatientName(selectedPatient)}
-                  </Badge>
-                )}
-              </CardTitle>
-              <div className="flex items-center gap-6">
-                <p className="text-gray-300 text-base">
+                <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
                   {selectedSubstance 
-                    ? `Detailed breakdown of ${selectedSubstance.toLowerCase()} usage patterns`
-                    : `Comprehensive view of substance use across ${totalPatients} ${totalPatients === 1 ? 'patient' : 'patients'}`
+                    ? `${selectedSubstance} Usage Patterns` 
+                    : "Substance Use Analysis"
                   }
-                </p>
-                <div className="flex items-center gap-2 px-3 py-1 bg-gray-700/50 rounded-lg">
-                  <Database className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs text-gray-400 font-medium">{dataSourceInfo.message}</span>
-                </div>
+                </span>
+              </CardTitle>
+              
+              <p className="text-gray-300 text-base leading-relaxed max-w-2xl mb-4">
+                {selectedSubstance 
+                  ? `Detailed breakdown of ${selectedSubstance.toLowerCase()} usage patterns and treatment insights`
+                  : `Comprehensive analysis of substance use patterns across ${totalPatients} ${totalPatients === 1 ? 'patient' : 'patients'}`
+                }
+              </p>
+              
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-700/50 rounded-lg inline-flex">
+                <Database className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-400 font-medium">{dataSourceInfo.message}</span>
               </div>
             </div>
             
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <div className="text-sm text-gray-400 font-medium">Total Records</div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-blue-300 bg-clip-text text-transparent">
-                  {selectedSubstance ? drillDownChartData.reduce((sum, item) => sum + item.value, 0) : filteredData.length}
+            {/* Professional Controls Panel */}
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 shadow-lg min-w-[400px]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-1.5 bg-gray-700 rounded-md">
+                  <Users className="h-4 w-4 text-gray-300" />
                 </div>
+                <h3 className="font-semibold text-white">Analysis Controls</h3>
               </div>
-              {!selectedSubstance && (
-                <div className="text-right">
-                  <div className="text-sm text-gray-400 font-medium">Substances</div>
-                  <div className="text-3xl font-bold bg-gradient-to-r from-green-400 to-green-300 bg-clip-text text-transparent">
-                    {mainChartData.length}
+              
+              <div className="space-y-6">
+                {/* Patient Scope */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Patient Scope</label>
+                  <PatientSelector />
+                </div>
+                
+                {/* View Mode */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-3">View Mode</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {/* TODO: Implement view mode toggle */}}
+                      className={`px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                        viewMode === 'aggregate'
+                          ? 'bg-blue-600 text-white shadow-md transform scale-[0.98]'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                      }`}
+                    >
+                      <Users className="w-4 h-4" />
+                      All Patients
+                    </button>
+                    <button
+                      onClick={() => {/* TODO: Implement view mode toggle */}}
+                      className={`px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                        viewMode === 'individual'
+                          ? 'bg-blue-600 text-white shadow-md transform scale-[0.98]'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                      }`}
+                    >
+                      <Users className="w-4 h-4" />
+                      Individual Patient
+                    </button>
                   </div>
                 </div>
-              )}
+                
+                {/* Time Period */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-3">Time Period</label>
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    {(['7D', '30D', '90D'] as const).map((period) => (
+                      <button
+                        key={period}
+                        onClick={() => {/* TODO: Implement time period filter */}}
+                        className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                          false // TODO: Add selected state logic
+                            ? 'bg-blue-600 text-white shadow-md transform scale-[0.98]'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                        }`}
+                      >
+                        {period}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {/* TODO: Implement all time filter */}}
+                      className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                        true // TODO: Add selected state logic for "All Time"
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                      }`}
+                    >
+                      All Time
+                    </button>
+                    <button
+                      onClick={() => {/* TODO: Implement custom date picker */}}
+                      className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                        false // TODO: Add selected state logic for "Custom"
+                          ? 'bg-violet-600 text-white shadow-md'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                      }`}
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                      </svg>
+                      Custom
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Bottom Section: Key Metrics */}
+          <div className="grid grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-gradient-to-br from-blue-900/50 to-blue-800/30 rounded-xl border border-blue-700/30">
+              <div className="text-3xl font-bold text-blue-400 mb-1">
+                {selectedSubstance ? drillDownChartData.reduce((sum, item) => sum + item.value, 0) : filteredData.length}
+              </div>
+              <div className="text-sm text-blue-300 font-medium">Total Records</div>
+              <div className="text-xs text-gray-400 mt-1">Substance use instances</div>
+            </div>
+            
+            {!selectedSubstance && (
+              <div className="text-center p-4 bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 rounded-xl border border-emerald-700/30">
+                <div className="text-3xl font-bold text-emerald-400 mb-1">{mainChartData.length}</div>
+                <div className="text-sm text-emerald-300 font-medium">Substance Types</div>
+                <div className="text-xs text-gray-400 mt-1">Unique substances identified</div>
+              </div>
+            )}
+            
+            <div className="text-center p-4 bg-gradient-to-br from-violet-900/50 to-violet-800/30 rounded-xl border border-violet-700/30">
+              <div className="text-3xl font-bold text-violet-400 mb-1">{totalPatients}</div>
+              <div className="text-sm text-violet-300 font-medium">
+                {totalPatients === 1 ? 'Patient' : 'Patients'}
+              </div>
+              <div className="text-xs text-gray-400 mt-1">In current scope</div>
             </div>
           </div>
         </CardHeader>
@@ -459,20 +559,7 @@ export function BiopsychosocialPage() {
               {/* Legend */}
               {renderLegend(currentData)}
 
-              {/* Instructions */}
-              {!selectedSubstance && (
-                <div className="flex items-center justify-center mt-10">
-                  <div className="text-center p-6 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 rounded-2xl max-w-md transition-all duration-300 ease-out">
-                    <Info className="w-6 h-6 text-blue-400 mx-auto mb-3" />
-                    <p className="text-blue-300 text-base font-semibold mb-1">
-                      Interactive Analysis
-                    </p>
-                    <p className="text-blue-200 text-sm">
-                      Click on any slice to explore detailed usage patterns and trends
-                    </p>
-                  </div>
-                </div>
-              )}
+
             </div>
           ) : (
             <div className="flex items-center justify-center h-96 text-gray-400">
@@ -490,68 +577,7 @@ export function BiopsychosocialPage() {
         </CardContent>
       </Card>
 
-      {/* Summary Statistics */}
-      {filteredData.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300 hover:shadow-xl">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-gray-300">Most Common</CardTitle>
-              <TrendingUp className="h-5 w-5 text-blue-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white mb-1">
-                {mainChartData[0]?.name || 'N/A'}
-              </div>
-              <p className="text-xs text-gray-400 font-medium">
-                {mainChartData[0]?.percentage}% of all records
-              </p>
-            </CardContent>
-          </Card>
 
-          <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300 hover:shadow-xl">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-gray-300">Primary Substances</CardTitle>
-              <AlertTriangle className="h-5 w-5 text-red-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white mb-1">
-                {filteredData.filter(item => item.primarySubstance).length}
-              </div>
-              <p className="text-xs text-gray-400 font-medium">Identified as primary concern</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300 hover:shadow-xl">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-gray-300">Active Users</CardTitle>
-              <Users className="h-5 w-5 text-green-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white mb-1">
-                {filteredData.filter(item => item.lastUse === 'Current').length}
-              </div>
-              <p className="text-xs text-gray-400 font-medium">Currently using substances</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300 hover:shadow-xl">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-gray-300">Data Quality</CardTitle>
-              <Database className="h-5 w-5 text-purple-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-bold text-white mb-1">
-                {dataSourceInfo.type === 'real' ? 'Live' : 
-                 dataSourceInfo.type === 'mock' ? 'Demo' : 'Mixed'}
-              </div>
-              <p className="text-xs text-gray-400 font-medium">
-                {dataSourceInfo.type === 'real' ? 'Real-time database' : 
-                 dataSourceInfo.type === 'mock' ? 'Sample data' : 'Partial coverage'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   )
 } 

@@ -503,6 +503,408 @@ class SupabaseService {
       }
     }
   }
+
+  // Extract real motivation themes using OpenAI semantic analysis
+  async getMotivationThemes(patientId?: string): Promise<{
+    themes: Array<{
+      name: string
+      count: number
+      percentage: number
+      color: string
+      size: number
+      sample_quotes: string[]
+    }>
+    metadata: {
+      total_patients: number
+      patients_with_motivation_data: number
+      coverage_percentage: number
+      data_sources: string[]
+      analysis_date: string
+    }
+  }> {
+    try {
+      console.log('🧠 Extracting motivation themes using OpenAI semantic analysis...')
+      
+      // Collect all patient text data
+      const patientTexts: Array<{patientId: string, text: string, source: string}> = []
+      const dataSources = []
+      const uniquePatients = new Set<string>()
+
+      // 1. Extract from BPS motivation fields
+      try {
+        const bpsQuery = supabase.from('BPS')
+          .select('group_identifier, ext_motivation, int_motivation')
+          .or('ext_motivation.neq.,int_motivation.neq.')
+
+        if (patientId) {
+          bpsQuery.eq('group_identifier', patientId)
+        }
+
+        const { data: bpsData, error: bpsError } = await bpsQuery
+
+        if (!bpsError && bpsData && bpsData.length > 0) {
+          dataSources.push('BPS')
+          console.log(`📊 Found ${bpsData.length} BPS records with motivation data`)
+
+          bpsData.forEach((record: any) => {
+            if (record.group_identifier) {
+              uniquePatients.add(record.group_identifier)
+
+              // Process external motivation (text)
+              if (record.ext_motivation && record.ext_motivation.trim()) {
+                patientTexts.push({
+                  patientId: record.group_identifier,
+                  text: record.ext_motivation,
+                  source: 'BPS-external'
+                })
+              }
+
+              // Process internal motivation (JSON)
+              if (record.int_motivation) {
+                try {
+                  const intMotivation = typeof record.int_motivation === 'string' 
+                    ? JSON.parse(record.int_motivation) 
+                    : record.int_motivation
+                  
+                  let textContent = ''
+                  if (Array.isArray(intMotivation)) {
+                    textContent = intMotivation.filter(item => typeof item === 'string').join(' ')
+                  } else if (typeof intMotivation === 'object') {
+                    textContent = Object.values(intMotivation).filter(value => typeof value === 'string').join(' ')
+                  }
+                  
+                  if (textContent.trim()) {
+                    patientTexts.push({
+                      patientId: record.group_identifier,
+                      text: textContent,
+                      source: 'BPS-internal'
+                    })
+                  }
+                } catch (parseError) {
+                  console.warn('Failed to parse int_motivation:', parseError)
+                }
+              }
+            }
+          })
+        }
+      } catch (error) {
+        console.warn('Error fetching BPS motivation data:', error)
+      }
+
+      // 2. Extract from PHP text analysis fields
+      try {
+        const phpQuery = supabase.from('PHP')
+          .select('group_identifier, matched_emotion_words, match_skill_words, match_support_words')
+          .or('matched_emotion_words.neq.,match_skill_words.neq.,match_support_words.neq.')
+
+        if (patientId) {
+          phpQuery.eq('group_identifier', patientId)
+        }
+
+        const { data: phpData, error: phpError } = await phpQuery
+
+        if (!phpError && phpData && phpData.length > 0) {
+          dataSources.push('PHP')
+          console.log(`📊 Found ${phpData.length} PHP records with text data`)
+
+          phpData.forEach((record: any) => {
+            if (record.group_identifier) {
+              uniquePatients.add(record.group_identifier)
+
+              // Combine all PHP text fields
+              const combinedText = [
+                record.matched_emotion_words,
+                record.match_skill_words,
+                record.match_support_words
+              ].filter(Boolean).join(' ')
+
+              if (combinedText.trim()) {
+                patientTexts.push({
+                  patientId: record.group_identifier,
+                  text: combinedText,
+                  source: 'PHP-analysis'
+                })
+              }
+            }
+          })
+        }
+      } catch (error) {
+        console.warn('Error fetching PHP text data:', error)
+      }
+
+      // 3. Extract from AHCM goal indicators (convert to text)
+      try {
+        const ahcmQuery = supabase.from('AHCM')
+          .select('group_identifier, want_work_help, want_school_help, feel_lonely, financial_strain')
+          .or('want_work_help.neq.,want_school_help.neq.,feel_lonely.neq.,financial_strain.neq.')
+
+        if (patientId) {
+          ahcmQuery.eq('group_identifier', patientId)
+        }
+
+        const { data: ahcmData, error: ahcmError } = await ahcmQuery
+
+        if (!ahcmError && ahcmData && ahcmData.length > 0) {
+          dataSources.push('AHCM')
+          console.log(`📊 Found ${ahcmData.length} AHCM records with goal data`)
+
+          ahcmData.forEach((record: any) => {
+            if (record.group_identifier) {
+              uniquePatients.add(record.group_identifier)
+
+              // Convert AHCM indicators to descriptive text
+              const goalTexts = []
+              if (record.want_work_help && record.want_work_help.toLowerCase() === 'yes') {
+                goalTexts.push('wants help with employment and work')
+              }
+              if (record.want_school_help && record.want_school_help.toLowerCase() === 'yes') {
+                goalTexts.push('wants help with education and school')
+              }
+              if (record.feel_lonely && record.feel_lonely.toLowerCase() === 'yes') {
+                goalTexts.push('feels lonely and needs social connection')
+              }
+              if (record.financial_strain && record.financial_strain.toLowerCase() === 'yes') {
+                goalTexts.push('experiencing financial strain and needs stability')
+              }
+
+              if (goalTexts.length > 0) {
+                patientTexts.push({
+                  patientId: record.group_identifier,
+                  text: goalTexts.join(', '),
+                  source: 'AHCM-goals'
+                })
+              }
+            }
+          })
+        }
+      } catch (error) {
+        console.warn('Error fetching AHCM goal data:', error)
+      }
+
+      // Now use OpenAI to analyze all collected text
+      const themes = await this.analyzeMotivationWithOpenAI(patientTexts)
+
+      // Calculate statistics
+      const allPatients = patientId ? 1 : (await this.getPatients()).length
+      const patientsWithData = uniquePatients.size
+
+      const result = {
+        themes,
+        metadata: {
+          total_patients: allPatients,
+          patients_with_motivation_data: patientsWithData,
+          coverage_percentage: allPatients > 0 ? Math.round((patientsWithData / allPatients) * 100 * 10) / 10 : 0,
+          data_sources: dataSources,
+          analysis_date: new Date().toISOString().split('T')[0]
+        }
+      }
+
+      console.log(`✅ Extracted ${themes.length} motivation themes using OpenAI analysis`)
+      console.log(`📊 Coverage: ${patientsWithData}/${allPatients} patients (${result.metadata.coverage_percentage}%)`)
+      console.log(`🗃️ Data sources: ${dataSources.join(', ')}`)
+
+      return result
+
+    } catch (error) {
+      console.error('Error extracting motivation themes:', error)
+      
+      // Return empty result on error
+      return {
+        themes: [],
+        metadata: {
+          total_patients: 0,
+          patients_with_motivation_data: 0,
+          coverage_percentage: 0,
+          data_sources: ['ERROR'],
+          analysis_date: new Date().toISOString().split('T')[0]
+        }
+      }
+    }
+  }
+
+  // Use OpenAI to analyze patient text for motivation themes
+  private async analyzeMotivationWithOpenAI(
+    patientTexts: Array<{patientId: string, text: string, source: string}>
+  ): Promise<Array<{
+    name: string
+    count: number
+    percentage: number
+    color: string
+    size: number
+    sample_quotes: string[]
+  }>> {
+    try {
+      if (patientTexts.length === 0) {
+        console.log('📭 No patient text data to analyze')
+        return []
+      }
+
+      console.log(`🧠 Analyzing ${patientTexts.length} patient text entries with OpenAI...`)
+
+      // Combine all patient texts for analysis
+      const allTexts = patientTexts.map(item => item.text).join('\n---\n')
+      
+      // Create OpenAI analysis prompt
+      const prompt = `You are a clinical data analyst specializing in patient motivation analysis. Analyze the following patient assessment texts and extract the most prominent motivation themes.
+
+PATIENT ASSESSMENT TEXTS:
+${allTexts}
+
+INSTRUCTIONS:
+1. Identify the 5-8 most prominent motivation themes from this text
+2. For each theme, provide:
+   - A clear theme name (e.g., "Recovery", "Family Support", "Mental Health")
+   - Count how many text entries mention this theme
+   - Extract 2-3 representative sample quotes
+3. Focus on motivations for treatment, recovery, and life improvement
+4. Consider both explicit statements and implicit motivations
+5. Return ONLY a valid JSON object in this exact format:
+
+{
+  "themes": [
+    {
+      "name": "Theme Name",
+      "count": number_of_mentions,
+      "sample_quotes": ["quote 1", "quote 2", "quote 3"]
+    }
+  ]
+}
+
+Analyze the text and return the JSON response:`
+
+      // Call OpenAI API
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a clinical data analyst. Return only valid JSON responses for motivation theme analysis.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 2000
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      const analysisText = data.choices?.[0]?.message?.content
+
+      if (!analysisText) {
+        throw new Error('No response from OpenAI')
+      }
+
+      // Parse the JSON response
+      let analysisResult
+      try {
+        analysisResult = JSON.parse(analysisText)
+      } catch (parseError) {
+        // Try to extract JSON from the response
+        const jsonMatch = analysisText.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          analysisResult = JSON.parse(jsonMatch[0])
+        } else {
+          throw new Error('Could not parse OpenAI response as JSON')
+        }
+      }
+
+      // Transform to our format
+      const colorPalette = [
+        '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', 
+        '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#14B8A6'
+      ]
+
+      const totalPatients = new Set(patientTexts.map(item => item.patientId)).size
+      
+      const themes = (analysisResult.themes || []).map((theme: any, index: number) => ({
+        name: theme.name || `Theme ${index + 1}`,
+        count: theme.count || 1,
+        percentage: totalPatients > 0 ? Math.round((theme.count / totalPatients) * 100 * 10) / 10 : 0,
+        color: colorPalette[index % colorPalette.length],
+        size: Math.max(12, Math.min(32, 12 + (theme.count || 1) * 2)),
+        sample_quotes: (theme.sample_quotes || []).slice(0, 3)
+      })).sort((a: any, b: any) => b.count - a.count)
+
+      console.log(`✅ OpenAI identified ${themes.length} motivation themes`)
+      console.log(`🎯 Top themes: ${themes.slice(0, 3).map((t: any) => t.name).join(', ')}`)
+
+      return themes
+
+    } catch (error) {
+      console.error('❌ OpenAI analysis failed:', error)
+      
+      // Fallback to basic keyword analysis if OpenAI fails
+      console.log('🔄 Falling back to keyword-based analysis...')
+      return this.fallbackKeywordAnalysis(patientTexts)
+    }
+  }
+
+  // Fallback keyword analysis if OpenAI fails
+  private fallbackKeywordAnalysis(
+    patientTexts: Array<{patientId: string, text: string, source: string}>
+  ): Array<{
+    name: string
+    count: number
+    percentage: number
+    color: string
+    size: number
+    sample_quotes: string[]
+  }> {
+    const keywordThemes = {
+      'Recovery': ['recovery', 'sobriety', 'clean', 'sober', 'quit', 'stop'],
+      'Family': ['family', 'kids', 'children', 'spouse', 'relationship'],
+      'Health': ['health', 'medical', 'therapy', 'treatment', 'wellness'],
+      'Support': ['help', 'support', 'assistance', 'community', 'friends'],
+      'Mental Health': ['depression', 'anxiety', 'emotional', 'mood', 'therapy']
+    }
+
+    const themeCounts: Record<string, {count: number, quotes: Set<string>}> = {}
+    Object.keys(keywordThemes).forEach(theme => {
+      themeCounts[theme] = { count: 0, quotes: new Set() }
+    })
+
+    // Simple keyword matching
+    patientTexts.forEach(item => {
+      const text = item.text.toLowerCase()
+      Object.entries(keywordThemes).forEach(([theme, keywords]) => {
+        keywords.forEach(keyword => {
+          if (text.includes(keyword)) {
+            themeCounts[theme].count++
+            const quote = item.text.substring(0, 50).trim() + '...'
+            themeCounts[theme].quotes.add(quote)
+          }
+        })
+      })
+    })
+
+    const colorPalette = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+    const totalPatients = new Set(patientTexts.map(item => item.patientId)).size
+
+    return Object.entries(themeCounts)
+      .map(([name, data], index) => ({
+        name,
+        count: data.count,
+        percentage: totalPatients > 0 ? Math.round((data.count / totalPatients) * 100 * 10) / 10 : 0,
+        color: colorPalette[index % colorPalette.length],
+        size: Math.max(12, Math.min(32, 12 + data.count * 2)),
+        sample_quotes: Array.from(data.quotes).slice(0, 3)
+      }))
+      .filter(theme => theme.count > 0)
+      .sort((a, b) => b.count - a.count)
+  }
 }
 
 export const supabaseService = new SupabaseService() 

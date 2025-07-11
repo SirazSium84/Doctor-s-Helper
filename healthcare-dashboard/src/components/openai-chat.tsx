@@ -9,6 +9,7 @@ import { Send, Bot, User, Brain, Loader2 } from 'lucide-react'
 
 export function OpenAIChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
   
   const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
     api: '/api/chat',
@@ -27,9 +28,14 @@ export function OpenAIChat() {
     initialMessages: [],
     })
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom within chat container when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
+    }
   }, [messages])
 
   // Debug: Track message changes
@@ -51,17 +57,20 @@ export function OpenAIChat() {
       <CardContent className="pb-4">
         <div className="flex flex-col space-y-4">
           {/* Messages */}
-          <div className="min-h-[300px] max-h-[75vh] lg:max-h-[70vh] overflow-y-auto space-y-4 p-2 transition-all duration-300 ease-in-out border border-gray-700 rounded-lg bg-gray-900/50">
+          <div 
+            ref={chatContainerRef}
+            className="h-[650px] overflow-y-auto space-y-4 p-6 transition-all duration-300 ease-in-out border border-gray-700 rounded-lg bg-gray-900/50 scroll-smooth"
+          >
             {messages.length === 0 && (
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600">
                   <Brain className="w-4 h-4 text-white" />
                 </div>
-                <div className="p-3 rounded-lg bg-gray-700 text-gray-100 border border-gray-600">
-                  <div className="text-sm">
-                    <strong>AI Healthcare Analytics Assistant</strong><br/>
+                <div className="p-4 rounded-xl bg-gray-700 text-gray-100 border border-gray-600 shadow-lg">
+                  <div className="text-sm leading-relaxed">
+                    <strong className="text-blue-400 font-semibold">AI Healthcare Analytics Assistant</strong><br/>
                     I can analyze patient risk profiles, identify high-risk patients, and provide clinical insights.<br/>
-                    Try asking: <em>"Analyze the risk profile for patient 0156b2ff0c18"</em>
+                    Try asking: <em className="text-gray-300">"Analyze the risk profile for patient 0156b2ff0c18"</em>
                   </div>
                 </div>
               </div>
@@ -92,25 +101,27 @@ export function OpenAIChat() {
                     )}
                   </div>
                   <div
-                    className={`p-3 rounded-lg ${
+                    className={`p-4 rounded-xl shadow-lg ${
                       message.role === 'user'
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-700 text-gray-100 border border-gray-600'
                     }`}
                   >
                     <div className="prose prose-sm prose-invert max-w-none">
-                      {/* Debug: Show raw content if formatting fails */}
                       {message.content ? (
-                        <div 
-                          className="whitespace-pre-wrap text-sm"
-                          dangerouslySetInnerHTML={{
-                            __html: message.content
-                              .replace(/\*\*(.*?)\*\*/g, '<strong class="text-blue-300">$1</strong>')
-                              .replace(/• (.*?)(\n|$)/g, '<div class="flex items-start gap-2 my-1"><span class="text-blue-400 mt-1">•</span><span>$1</span></div>')
-                              .replace(/- (.*?)(\n|$)/g, '<div class="flex items-start gap-2 my-1"><span class="text-blue-400 mt-1">-</span><span>$1</span></div>')
-                              .replace(/\n\n/g, '<br/><br/>')
-                          }}
-                        />
+                        <div className="leading-relaxed">
+                          {message.content.split('\n').map((line, i) => (
+                            <p key={i} className="mb-2 last:mb-0 text-sm">
+                              {line.includes('**') ? (
+                                line.split('**').map((part, j) => 
+                                  j % 2 === 1 ? <strong key={j} className="text-blue-400 font-semibold">{part}</strong> : part
+                                )
+                              ) : line}
+                            </p>
+                          ))}
+                        </div>
+                      ) : message.role === 'user' ? (
+                        <p className="text-sm font-medium">{message.content}</p>
                       ) : (
                         <div className="text-gray-400 text-xs">
                           [Empty response - check browser console for details]
@@ -133,10 +144,12 @@ export function OpenAIChat() {
                 <div className="p-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600">
                   <Brain className="w-4 h-4 text-white" />
                 </div>
-                <div className="p-3 rounded-lg bg-gray-700 text-gray-100 border border-gray-600">
+                <div className="p-4 rounded-xl bg-gray-700 text-gray-100 border border-gray-600 shadow-lg">
                   <div className="flex items-center gap-2">
-                    <Loader2 className="animate-spin h-4 w-4 text-blue-400" />
-                    <span className="text-sm">AI is analyzing healthcare data...</span>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                    <span className="text-sm text-gray-300 ml-2">AI is analyzing healthcare data...</span>
                   </div>
                 </div>
               </div>
@@ -163,25 +176,57 @@ export function OpenAIChat() {
           <form onSubmit={(e) => {
             console.log('📤 Submitting form with input:', input)
             handleSubmit(e)
-          }} className="flex gap-2">
+          }} className="flex gap-3 mt-6">
             <Input
               id="chat-input"
               name="message"
               value={input}
               onChange={handleInputChange}
               placeholder="Ask about patient risk analysis, clinical insights, or treatment recommendations..."
-              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 h-12 text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               disabled={isLoading}
               autoComplete="off"
             />
             <Button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-8 h-12 font-semibold shadow-lg hover:shadow-xl transition-all"
             >
-              <Send className="w-4 h-4" />
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Analyzing</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Send className="w-4 h-4" />
+                  <span>Ask AI</span>
+                </div>
+              )}
             </Button>
           </form>
+
+          {/* Clinical Quick Actions */}
+          <div className="mt-4">
+            <p className="text-xs text-gray-400 mb-3 font-medium">Quick Clinical Queries:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                "Analyze high-risk patients",
+                "Show patient risk profiles", 
+                "Identify substance use patterns",
+                "Clinical recommendations needed"
+              ].map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleInputChange({ target: { value: suggestion } } as any)}
+                  className="text-xs px-4 py-2 bg-gradient-to-r from-gray-700/60 to-gray-600/40 hover:from-gray-600/60 hover:to-gray-500/40 border border-gray-600 rounded-lg text-gray-300 hover:text-white transition-all duration-200 text-left font-medium shadow-sm hover:shadow-md"
+                  disabled={isLoading}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

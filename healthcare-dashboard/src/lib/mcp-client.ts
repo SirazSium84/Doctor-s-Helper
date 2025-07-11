@@ -184,6 +184,30 @@ class MCPClient {
           success: true,
           data: await this.getPatientAssessmentsFromSupabase(params.patient_id)
         }
+
+      case 'get_motivation_themes':
+        return {
+          success: true,
+          data: {
+            themes: [
+              { name: "Recovery", count: 45, percentage: 32.1, color: "#3B82F6", size: 32, sample_quotes: ["want to stay clean", "sobriety is my goal"] },
+              { name: "Family", count: 38, percentage: 27.1, color: "#10B981", size: 28, sample_quotes: ["be there for my kids", "rebuild family trust"] },
+              { name: "Health", count: 32, percentage: 22.9, color: "#F59E0B", size: 24, sample_quotes: ["improve my health", "get physically better"] },
+              { name: "Future", count: 28, percentage: 20.0, color: "#EF4444", size: 20, sample_quotes: ["build a better future", "have goals again"] },
+              { name: "Hope", count: 25, percentage: 17.9, color: "#8B5CF6", size: 18, sample_quotes: ["feeling hopeful", "things can get better"] },
+              { name: "Strength", count: 22, percentage: 15.7, color: "#06B6D4", size: 16, sample_quotes: ["finding my strength", "becoming stronger"] },
+              { name: "Support", count: 19, percentage: 13.6, color: "#84CC16", size: 14, sample_quotes: ["getting support", "people who care"] },
+              { name: "Growth", count: 16, percentage: 11.4, color: "#F97316", size: 12, sample_quotes: ["personal growth", "learning and growing"] }
+            ],
+            metadata: {
+              total_patients: 140,
+              patients_with_motivation_data: 98,
+              coverage_percentage: 70.0,
+              data_sources: ["FALLBACK"],
+              analysis_date: new Date().toISOString().split('T')[0]
+            }
+          }
+        }
       
       default:
         return {
@@ -368,6 +392,11 @@ class MCPClient {
 
   async calculateCompositeRiskScore(patientId: string): Promise<MCPResponse> {
     return this.callMCPTool('calculate_composite_risk_score', { patient_id: patientId })
+  }
+
+  async getMotivationThemes(patientId?: string): Promise<MCPResponse> {
+    const params = patientId ? { patient_id: patientId } : {}
+    return this.callMCPTool('get_motivation_themes', params)
   }
 
   // Data transformation methods

@@ -9,6 +9,7 @@ from assessment_tools import create_assessment_tools
 from substance_tools import create_substance_tools
 from analytics_tools import create_analytics_tools
 from resources import create_patient_resources
+from motivation_tools import create_motivation_tools
 
 
 def create_heatlhcare_mcp():
@@ -33,6 +34,7 @@ def create_heatlhcare_mcp():
     mcp = create_substance_tools(mcp)
     mcp = create_analytics_tools(mcp)
     mcp = create_patient_resources(mcp)
+    mcp = create_motivation_tools(mcp)
 
     return mcp
 
@@ -40,7 +42,7 @@ def create_heatlhcare_mcp():
 def main():
     """Main entry point for the healthcare MCP server"""
     import os
-    
+
     print("Starting Healthcare Dashboard MCP Server...")
 
     try:
@@ -74,6 +76,8 @@ def main():
             "calculate_composite_risk_score",
             "compare_patient_to_population",
             "identify_patients_needing_attention",
+            # Motivation tools
+            "get_motivation_themes",
         ]
 
         for i, tool_name in enumerate(tool_names, 1):
@@ -94,7 +98,7 @@ def main():
         # Get port from environment variable or use default
         port = int(os.getenv("MCP_PORT", 8000))
         host = os.getenv("MCP_HOST", "0.0.0.0")
-        
+
         print(f"\nStarting HTTP server on {host}:{port}")
         print("To use this server with your Next.js app:")
         print(f"1. Configure your .env file with Supabase credentials")

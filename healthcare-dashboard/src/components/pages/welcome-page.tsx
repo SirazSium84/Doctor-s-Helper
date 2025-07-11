@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts"
 import { Users, Activity, TrendingUp, AlertTriangle, Heart, Shield, Brain, Target, Calendar, CheckCircle, Zap } from "lucide-react"
 import { OpenAIChat } from "@/components/openai-chat"
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 
 export function WelcomePage() {
   const { patients, dashboardStats } = useDashboardStore()
@@ -124,8 +124,8 @@ export function WelcomePage() {
     percentage: ((count / patients.length) * 100).toFixed(1)
   }))
 
-  // Mock motivation words for wordcloud effect
-  const motivationWords = [
+  // Real motivation themes from MCP server
+  const [motivationWords, setMotivationWords] = useState([
     { text: "Recovery", size: 32, color: "#3B82F6" },
     { text: "Family", size: 28, color: "#10B981" },
     { text: "Health", size: 24, color: "#F59E0B" },
@@ -134,7 +134,50 @@ export function WelcomePage() {
     { text: "Strength", size: 16, color: "#06B6D4" },
     { text: "Support", size: 14, color: "#84CC16" },
     { text: "Growth", size: 12, color: "#F97316" },
-  ]
+  ])
+  const [motivationDataSource, setMotivationDataSource] = useState<string>('LOADING')
+
+  // Fetch real motivation themes from MCP server
+  useEffect(() => {
+    const fetchMotivationThemes = async () => {
+      try {
+        console.log('🎯 Fetching motivation themes from MCP server...')
+        const response = await fetch('/api/motivation-themes')
+        const result = await response.json()
+        
+        if (result.success && result.data?.themes) {
+          console.log('✅ Successfully loaded motivation themes:', result.data.themes.length, 'themes')
+          console.log('📊 Data source:', result.source)
+          
+          // Transform MCP data to word cloud format
+          const themes = result.data.themes.map((theme: any) => ({
+            text: theme.name,
+            size: theme.size || Math.max(12, Math.min(32, 12 + (theme.percentage || 0) * 0.8)),
+            color: theme.color
+          }))
+          
+          setMotivationWords(themes)
+          
+          // Set data source based on API response
+          if (result.source === 'DIRECT_DATABASE') {
+            setMotivationDataSource(`OPENAI_ANALYSIS (${result.data.metadata?.data_sources?.join(', ') || 'Database'})`)
+          } else {
+            setMotivationDataSource(result.data.metadata?.data_sources?.join(', ') || result.source)
+          }
+          
+          console.log('🎨 Updated motivation word cloud with real data')
+        } else {
+          console.warn('⚠️ Failed to load motivation themes, using fallback data')
+          setMotivationDataSource('FALLBACK')
+        }
+      } catch (error) {
+        console.error('❌ Error fetching motivation themes:', error)
+        setMotivationDataSource('ERROR - Using Mock Data')
+      }
+    }
+
+    fetchMotivationThemes()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -525,13 +568,36 @@ export function WelcomePage() {
             {/* Patient Motivations Wordcloud */}
             <Card className="bg-gray-800 border-gray-700 hover:shadow-2xl transition-all duration-300">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Heart className="h-5 w-5 text-pink-400" />
-                  Motivation Themes
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Key motivational factors identified in patient assessments
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <Heart className="h-5 w-5 text-pink-400" />
+                      Motivation Themes
+                    </CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Key motivational factors identified in patient assessments
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 rounded-lg">
+                    <div className={`w-2 h-2 rounded-full ${
+                      motivationDataSource.includes('OPENAI_ANALYSIS') ? 'bg-purple-500' :
+                      motivationDataSource.includes('MCP_SERVER') ? 'bg-emerald-500' :
+                      motivationDataSource.includes('DIRECT_DATABASE') ? 'bg-blue-500' :
+                      motivationDataSource.includes('FALLBACK') ? 'bg-amber-500' :
+                      motivationDataSource.includes('ERROR') ? 'bg-red-500' :
+                      'bg-blue-500 animate-pulse'
+                    }`}></div>
+                    <span className="text-xs text-gray-400 font-medium">
+                      {motivationDataSource === 'LOADING' ? 'Loading...' : 
+                       motivationDataSource.includes('OPENAI_ANALYSIS') ? '🧠 OpenAI Analysis' :
+                       motivationDataSource.includes('MCP_SERVER') ? 'MCP Server' :
+                       motivationDataSource.includes('DIRECT_DATABASE') ? 'Real Data' :
+                       motivationDataSource.includes('FALLBACK') ? 'Fallback Data' :
+                       motivationDataSource.includes('ERROR') ? 'Demo Data' :
+                       motivationDataSource}
+                    </span>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap items-center justify-center gap-6 py-12 px-4 bg-gradient-to-br from-gray-900/30 to-gray-800/30 rounded-xl">

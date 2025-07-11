@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PatientSelector } from '@/components/patient-selector'
 import { Button } from '@/components/ui/button'
@@ -34,13 +34,318 @@ interface PatientEngagement {
 }
 
 interface TextInsights {
-  emotionWordsAvailable: number
-  skillWordsAvailable: number
+  emotionWordsAvailable: number // Now represents assessments with emotional data
+  skillWordsAvailable: number // Now represents assessments with skills data
   supportWordsAvailable: number
   cravingDataAvailable: number
   totalRecords: number
   sampleEmotionWords?: string
   sampleSkillWords?: string
+}
+
+interface PHPAssessmentAgentProps {
+  assessmentData: PHPAssessment[]
+  patientEngagement: PatientEngagement[]
+  monthlyTrends: MonthlyTrend[]
+  emotionalBreakdown: any[]
+  copingStrategies: any[]
+  dataSource: 'live' | 'demo'
+}
+
+function PHPAssessmentAgent({
+  assessmentData,
+  patientEngagement,
+  monthlyTrends,
+  emotionalBreakdown,
+  copingStrategies,
+  dataSource
+}: PHPAssessmentAgentProps) {
+  const [messages, setMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([
+    {
+      role: 'assistant',
+      content: "Hi! I'm your PHP Assessment Agent. I can help you analyze patient data, emotional patterns, and treatment outcomes. What would you like to know?"
+    }
+  ])
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to bottom within chat container when new messages are added
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
+    }
+  }, [messages])
+
+  // Generate intelligent responses using OpenAI
+  const generateContextualResponse = useCallback(async (question: string): Promise<string> => {
+    // Calculate real-time data summary to match charts
+    const totalAssessments = assessmentData.length
+    
+    // Get unique patients from current filtered data
+    const uniquePatients = new Set(assessmentData.map(a => a.groupIdentifier || a.uniqueId)).size
+    const totalPatients = uniquePatients || patientEngagement.length
+    
+    const avgAssessments = totalPatients > 0 ? Math.round(totalAssessments / totalPatients * 10) / 10 : 0
+    const topEmotion = emotionalBreakdown[0]?.emotion || 'None'
+    const topStrategy = copingStrategies[0]?.strategy || 'None'
+    
+    // Real-time medication and therapy rates from current filtered data
+    const medicationRate = totalAssessments > 0 ? Math.round((assessmentData.filter(a => a.takeMyMeds).length / totalAssessments) * 100) : 0
+    const therapyRate = totalAssessments > 0 ? Math.round((assessmentData.filter(a => a.therapy).length / totalAssessments) * 100) : 0
+    
+    // Prepare comprehensive data context for OpenAI
+    const dataContext = {
+      overview: {
+        totalPatients,
+        totalAssessments,
+        avgAssessments,
+        dataSource: dataSource === 'live' ? 'Live clinical data' : 'Demo data'
+      },
+      emotions: emotionalBreakdown.slice(0, 5).map(e => ({
+        emotion: e.emotion,
+        count: e.count,
+        percentage: e.percentage
+      })),
+      copingStrategies: copingStrategies.slice(0, 5).map(s => ({
+        strategy: s.strategy,
+        count: s.count,
+        percentage: s.percentage
+      })),
+      treatmentMetrics: {
+        medicationAdherence: medicationRate,
+        therapyAttendance: therapyRate
+      },
+      monthlyTrends: monthlyTrends.map(m => ({
+        month: m.month,
+        assessments: m.assessments,
+        avgSkillsUsed: m.avgSkillsUsed,
+        avgSelfCare: m.avgSelfCare,
+        therapyAttendance: m.therapyAttendance,
+        medicationAdherence: m.medicationAdherence
+      })),
+      patientEngagement: patientEngagement.slice(0, 10).map(p => ({
+        patientId: p.patientId,
+        engagementLevel: p.engagementLevel,
+        assessmentCount: p.assessmentCount,
+        topEmotion: p.topEmotion,
+        avgSkills: p.avgSkills,
+        avgSelfCare: p.avgSelfCare,
+        dateRange: p.dateRange
+      })),
+      // Include sample of actual patient IDs from assessments
+      recentPatientIds: [...new Set(assessmentData.slice(0, 20).map(a => a.groupIdentifier || a.uniqueId))].filter(Boolean),
+      // High-risk patients with actual IDs
+      lowEngagementPatients: patientEngagement.filter(p => p.engagementLevel === 'Low').map(p => ({
+        patientId: p.patientId,
+        assessmentCount: p.assessmentCount,
+        topEmotion: p.topEmotion,
+        avgSkills: p.avgSkills,
+        reasons: [
+          p.assessmentCount < 5 ? 'Low assessment frequency' : null,
+          p.avgSkills < 1 ? 'Poor coping skills usage' : null,
+          p.topEmotion === 'anxiety' || p.topEmotion === 'depressed' ? `Concerning emotion: ${p.topEmotion}` : null
+        ].filter(Boolean)
+      }))
+    }
+
+    try {
+      const response = await fetch('/api/php-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: `You are a clinical data analyst for a Primary Health Program (PHP) used by doctors and healthcare professionals. You have access to real-time patient assessment data and should provide accurate, professional insights based on the data provided.
+
+CURRENT DATA CONTEXT:
+${JSON.stringify(dataContext, null, 2)}
+
+Guidelines:
+- Provide specific, data-driven insights with actual patient IDs when relevant
+- Use clinical terminology appropriately
+- When identifying patients who need attention, include their specific patient IDs
+- Highlight concerning patterns or positive outcomes with patient identifiers
+- Reference actual numbers and percentages from the data
+- Be concise but comprehensive
+- Use markdown formatting for key metrics (bold with **)
+- Focus on actionable clinical insights that doctors can act upon
+- Include patient IDs in recommendations (e.g., "Patient ABC123 requires immediate intervention")
+- This is a secure clinical environment - patient IDs are appropriate to share`
+            },
+            {
+              role: 'user',
+              content: question
+            }
+          ]
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      return data.response || 'I apologize, but I encountered an issue processing your question. Please try again.'
+      
+    } catch (error) {
+      console.error('Error calling OpenAI:', error)
+      
+      // Fallback to basic pattern matching if OpenAI fails
+      const lowerQuestion = question.toLowerCase()
+      
+      if (lowerQuestion.includes('patient') && lowerQuestion.includes('total')) {
+        return `We currently have **${totalPatients} unique patients** enrolled in the PHP program with **${totalAssessments} total assessments** (${avgAssessments} avg per patient).`
+      }
+      
+      if (lowerQuestion.includes('emotion') || lowerQuestion.includes('feeling')) {
+        const emotionsList = emotionalBreakdown.slice(0, 3).map(e => `${e.emotion} (${e.percentage}%)`).join(', ')
+        return `The most common emotional states are: **${emotionsList}**. The dominant emotion is **${topEmotion}**.`
+      }
+      
+      // Default overview for any other questions
+      return `**PHP Program Overview:**
+      
+📊 **${totalPatients} patients** with **${totalAssessments} assessments**
+😊 **Top emotion:** ${topEmotion} (${emotionalBreakdown[0]?.percentage || 0}%)
+🛡️ **Primary strategy:** ${topStrategy} (${copingStrategies[0]?.percentage || 0}%)
+💊 **Medication adherence:** ${medicationRate}%
+🏥 **Therapy attendance:** ${therapyRate}%
+
+*Note: Enhanced AI analysis temporarily unavailable, showing basic summary.*`
+    }
+  }, [assessmentData, patientEngagement, monthlyTrends, emotionalBreakdown, copingStrategies, dataSource])
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!input.trim() || isLoading) return
+
+    const userMessage = input.trim()
+    setInput('')
+    setIsLoading(true)
+
+    // Add user message
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }])
+
+    try {
+      // Get AI response
+      const response = await generateContextualResponse(userMessage)
+      setMessages(prev => [...prev, { role: 'assistant', content: response }])
+    } catch (error) {
+      console.error('Error generating response:', error)
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'I apologize, but I encountered an error while processing your question. Please try again.' 
+      }])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [input, isLoading, generateContextualResponse])
+
+  return (
+    <div className="flex flex-col h-[650px]">
+      {/* Chat Messages */}
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto space-y-4 p-6 bg-gray-900/50 rounded-lg border border-gray-700 scroll-smooth"
+      >
+        {messages.map((message, index) => (
+          <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[85%] p-4 rounded-xl shadow-lg ${
+              message.role === 'user' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-700 text-gray-100 border border-gray-600'
+            }`}>
+              {message.role === 'assistant' ? (
+                <div className="prose prose-sm prose-invert max-w-none">
+                  {message.content.split('\n').map((line, i) => (
+                    <p key={i} className="mb-2 last:mb-0 leading-relaxed">
+                      {line.includes('**') ? (
+                        line.split('**').map((part, j) => 
+                          j % 2 === 1 ? <strong key={j} className="text-blue-400 font-semibold">{part}</strong> : part
+                        )
+                      ) : line}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm font-medium">{message.content}</p>
+              )}
+            </div>
+          </div>
+        ))}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-700 text-gray-100 p-4 rounded-xl border border-gray-600 shadow-lg">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                <span className="text-sm text-gray-300 ml-2">Analyzing clinical data...</span>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Auto-scroll anchor */}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input Form */}
+      <form onSubmit={handleSubmit} className="flex gap-3 mt-6">
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask about patient patterns, emotional trends, treatment outcomes..."
+          className="flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400 h-12 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          disabled={isLoading}
+        />
+        <Button 
+          type="submit" 
+          disabled={!input.trim() || isLoading}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-8 h-12 font-semibold shadow-lg hover:shadow-xl transition-all"
+        >
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 animate-spin" />
+              <span>Analyzing</span>
+            </div>
+          ) : (
+            'Ask Agent'
+          )}
+        </Button>
+      </form>
+
+      {/* Clinical Quick Actions */}
+      <div className="mt-4">
+        <p className="text-xs text-gray-400 mb-3 font-medium">Quick Clinical Queries:</p>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            "Which patients need immediate attention?",
+            "Show medication adherence issues", 
+            "Identify high-risk emotional patterns",
+            "List patients with low engagement"
+          ].map((suggestion, index) => (
+            <button
+              key={index}
+              onClick={() => setInput(suggestion)}
+              className="text-xs px-4 py-2 bg-gradient-to-r from-gray-700/60 to-gray-600/40 hover:from-gray-600/60 hover:to-gray-500/40 border border-gray-600 rounded-lg text-gray-300 hover:text-white transition-all duration-200 text-left font-medium shadow-sm hover:shadow-md"
+              disabled={isLoading}
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function PHPEmotionalAnalyticsPage() {
@@ -337,24 +642,61 @@ export function PHPEmotionalAnalyticsPage() {
     return result
   }, [filteredData])
 
-  // Text data insights
+  // Enhanced data insights
   const textInsights: TextInsights = useMemo(() => {
-    const emotionWordsCount = filteredData.filter(d => d.matchedEmotionWords && d.matchedEmotionWords.trim()).length
-    const skillWordsCount = filteredData.filter(d => d.matchSkillWords && d.matchSkillWords.trim()).length
+    // Count assessments with any emotional state data
+    const emotionalDataCount = filteredData.filter(d => 
+      d.pain || d.sad || d.content || d.anger || d.shame || d.fear || 
+      d.joy || d.anxiety || d.depressed || d.alone
+    ).length
+    
+    // Count assessments with any coping skills data
+    const skillsDataCount = filteredData.filter(d => 
+      d.mindfulnessmeditation || d.distressTolerance || d.oppositeAction || 
+      d.takeMyMeds || d.askForHelp || d.improveMoment || d.partsWork || 
+      d.playTheTapeThru || d.values
+    ).length
+    
+    // Count assessments with text data
+    const textEmotionCount = filteredData.filter(d => d.matchedEmotionWords && d.matchedEmotionWords.trim()).length
+    const textSkillCount = filteredData.filter(d => d.matchSkillWords && d.matchSkillWords.trim()).length
     const supportWordsCount = filteredData.filter(d => d.matchSupportWords && d.matchSupportWords.trim()).length
     const cravingCount = filteredData.filter(d => d.craving && d.craving.trim()).length
     
+    // Get sample text data
     const sampleWithEmotions = filteredData.find(d => d.matchedEmotionWords && d.matchedEmotionWords.trim())
     const sampleWithSkills = filteredData.find(d => d.matchSkillWords && d.matchSkillWords.trim())
     
+    // Analyze most common emotions and skills
+    const emotionCounts = {
+      joy: filteredData.filter(d => d.joy).length,
+      anxiety: filteredData.filter(d => d.anxiety).length,
+      depressed: filteredData.filter(d => d.depressed).length,
+      content: filteredData.filter(d => d.content).length,
+      pain: filteredData.filter(d => d.pain).length
+    }
+    
+    const skillCounts = {
+      medication: filteredData.filter(d => d.takeMyMeds).length,
+      mindfulness: filteredData.filter(d => d.mindfulnessmeditation).length,
+      values: filteredData.filter(d => d.values).length,
+      help: filteredData.filter(d => d.askForHelp).length,
+      opposite: filteredData.filter(d => d.oppositeAction).length
+    }
+    
+    const topEmotion = Object.entries(emotionCounts).sort(([,a], [,b]) => b - a)[0]
+    const topSkill = Object.entries(skillCounts).sort(([,a], [,b]) => b - a)[0]
+    
     return {
-      emotionWordsAvailable: emotionWordsCount,
-      skillWordsAvailable: skillWordsCount,
+      emotionWordsAvailable: emotionalDataCount, // Changed to use structured data count
+      skillWordsAvailable: skillsDataCount, // Changed to use structured data count
       supportWordsAvailable: supportWordsCount,
       cravingDataAvailable: cravingCount,
       totalRecords: filteredData.length,
-      sampleEmotionWords: sampleWithEmotions?.matchedEmotionWords,
-      sampleSkillWords: sampleWithSkills?.matchSkillWords
+      sampleEmotionWords: sampleWithEmotions?.matchedEmotionWords || 
+        (topEmotion ? `${topEmotion[0]} (${topEmotion[1]} assessments)` : undefined),
+      sampleSkillWords: sampleWithSkills?.matchSkillWords || 
+        (topSkill ? `${topSkill[0]} (${topSkill[1]} assessments)` : undefined)
     }
   }, [filteredData])
 
@@ -778,15 +1120,10 @@ export function PHPEmotionalAnalyticsPage() {
                     fontWeight: '500'
                   }}
                   formatter={(value: any, name: any, props: any) => [
-                    `${value} assessments (${props.payload.percentage}%)`,
-                    'Count'
+                    `${props.payload.percentage}%`,
+                    props.payload.emotion
                   ]}
-                  labelFormatter={(label: any, payload: any) => {
-                    if (payload && payload.length > 0) {
-                      return payload[0].payload.emotion
-                    }
-                    return label
-                  }}
+                  labelFormatter={() => ''}
                 />
                 <Legend 
                   verticalAlign="bottom" 
@@ -1011,35 +1348,76 @@ export function PHPEmotionalAnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
               <MessageSquare className="h-5 w-5 text-blue-400" />
-              Qualitative Data Insights
+              Data Coverage & Quality
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Primary Data Coverage */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-blue-900/30 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-400">{textInsights.emotionWordsAvailable}</p>
-                  <p className="text-xs text-blue-300">Emotion Word Records</p>
-                  <p className="text-xs text-gray-400">({Math.round((textInsights.emotionWordsAvailable / textInsights.totalRecords) * 100)}% coverage)</p>
+                <div className="text-center p-4 bg-gradient-to-br from-blue-900/40 to-blue-800/30 rounded-xl border border-blue-700/30">
+                  <p className="text-3xl font-bold text-blue-400 mb-1">{textInsights.emotionWordsAvailable}</p>
+                  <p className="text-sm text-blue-300 font-medium">Emotional Data Points</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {Math.round((textInsights.emotionWordsAvailable / textInsights.totalRecords) * 100)}% coverage
+                  </p>
                 </div>
-                <div className="text-center p-3 bg-green-900/30 rounded-lg">
-                  <p className="text-2xl font-bold text-green-400">{textInsights.skillWordsAvailable}</p>
-                  <p className="text-xs text-green-300">Skill Word Records</p>
-                  <p className="text-xs text-gray-400">({Math.round((textInsights.skillWordsAvailable / textInsights.totalRecords) * 100)}% coverage)</p>
+                <div className="text-center p-4 bg-gradient-to-br from-emerald-900/40 to-emerald-800/30 rounded-xl border border-emerald-700/30">
+                  <p className="text-3xl font-bold text-emerald-400 mb-1">{textInsights.skillWordsAvailable}</p>
+                  <p className="text-sm text-emerald-300 font-medium">Coping Skills Data</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {Math.round((textInsights.skillWordsAvailable / textInsights.totalRecords) * 100)}% coverage
+                  </p>
                 </div>
               </div>
               
+              {/* Secondary Metrics */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-purple-900/30 rounded-lg border border-purple-700/30">
+                  <p className="text-xl font-bold text-purple-400">{textInsights.supportWordsAvailable}</p>
+                  <p className="text-xs text-purple-300">Support Network Data</p>
+                </div>
+                <div className="text-center p-3 bg-amber-900/30 rounded-lg border border-amber-700/30">
+                  <p className="text-xl font-bold text-amber-400">{textInsights.cravingDataAvailable}</p>
+                  <p className="text-xs text-amber-300">Craving Incidents</p>
+                </div>
+              </div>
+
+              {/* Data Quality Indicators */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-300">Data Source Quality</span>
+                  <Badge variant={dataSource === 'live' ? 'default' : 'secondary'} className="text-xs">
+                    {dataSource === 'live' ? '🟢 Live Data' : '🟡 Demo Data'}
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-300">Assessment Completeness</span>
+                  <span className="text-sm font-semibold text-emerald-400">
+                    {Math.round(((textInsights.emotionWordsAvailable + textInsights.skillWordsAvailable) / (textInsights.totalRecords * 2)) * 100)}%
+                  </span>
+                </div>
+              </div>
+              
+              {/* Key Insights */}
               {textInsights.sampleEmotionWords && (
-                <div className="p-3 bg-gray-700/50 rounded-lg">
-                  <p className="text-sm font-medium text-white mb-2">Sample Emotion Words:</p>
-                  <p className="text-sm text-gray-300 italic">"{textInsights.sampleEmotionWords}"</p>
+                <div className="p-4 bg-gradient-to-r from-gray-700/50 to-gray-600/30 rounded-xl border border-gray-600/50">
+                  <p className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                    <Target className="h-4 w-4 text-blue-400" />
+                    Top Emotional Pattern:
+                  </p>
+                  <p className="text-sm text-gray-300">{textInsights.sampleEmotionWords}</p>
                 </div>
               )}
               
               {textInsights.sampleSkillWords && (
-                <div className="p-3 bg-gray-700/50 rounded-lg">
-                  <p className="text-sm font-medium text-white mb-2">Sample Skill Words:</p>
-                  <p className="text-sm text-gray-300 italic">"{textInsights.sampleSkillWords}"</p>
+                <div className="p-4 bg-gradient-to-r from-gray-700/50 to-gray-600/30 rounded-xl border border-gray-600/50">
+                  <p className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-emerald-400" />
+                    Primary Coping Strategy:
+                  </p>
+                  <p className="text-sm text-gray-300">{textInsights.sampleSkillWords}</p>
                 </div>
               )}
             </div>
@@ -1050,39 +1428,21 @@ export function PHPEmotionalAnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
               <Brain className="h-5 w-5 text-indigo-400" />
-              Clinical Insights & Recommendations
+              PHP Assessment Agent
             </CardTitle>
+            <CardDescription className="text-gray-400">
+              Ask questions about patient assessments, emotional patterns, and treatment outcomes
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="p-3 bg-green-900/30 rounded-lg">
-                <p className="text-sm font-medium text-green-300">Program Effectiveness</p>
-                <p className="text-xs text-green-400 mt-1">
-                  Clear month-over-month improvement in coping skills usage (0.4 → 2.7 skills per assessment)
-                </p>
-              </div>
-              
-              <div className="p-3 bg-blue-900/30 rounded-lg">
-                <p className="text-sm font-medium text-blue-300">Emotional Profile</p>
-                <p className="text-xs text-blue-400 mt-1">
-                  Joy is the dominant emotion (51.6%), indicating positive program outcomes alongside managed anxiety (40.6%)
-                </p>
-              </div>
-
-              <div className="p-3 bg-purple-900/30 rounded-lg">
-                <p className="text-sm font-medium text-purple-300">Treatment Adherence</p>
-                <p className="text-xs text-purple-400 mt-1">
-                  High medication compliance (45.3%) and excellent therapy attendance (46.9%) support recovery
-                </p>
-              </div>
-              
-              <div className="p-3 bg-amber-900/30 rounded-lg">
-                <p className="text-sm font-medium text-amber-300">Engagement Patterns</p>
-                <p className="text-xs text-amber-400 mt-1">
-                  Variable patient engagement (1-25 assessments) suggests need for personalized intervention strategies
-                </p>
-              </div>
-            </div>
+            <PHPAssessmentAgent 
+              assessmentData={filteredData}
+              patientEngagement={patientEngagement}
+              monthlyTrends={monthlyTrends}
+              emotionalBreakdown={emotionalBreakdown}
+              copingStrategies={topCopingStrategies}
+              dataSource={dataSource}
+            />
           </CardContent>
         </Card>
       </div>
