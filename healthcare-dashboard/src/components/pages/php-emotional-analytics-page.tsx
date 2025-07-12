@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, AreaChart, Area, ComposedChart } from 'recharts'
 import { TrendingUp, TrendingDown, Brain, Heart, Shield, Activity, Calendar, Users, AlertTriangle, CheckCircle, Target, Zap, Pill, Clock, MessageSquare, Filter, X } from 'lucide-react'
 import { useDashboardStore } from '@/store/dashboard-store'
-import { fetchPHPAssessments, calculateEmotionalMetrics, calculateCopingSkillsMetrics, calculateSelfCareMetrics } from '@/lib/supabase-service'
+import { comprehensiveDataService } from '@/lib/comprehensive-data-service'
+import { calculateEmotionalMetrics, calculateCopingSkillsMetrics, calculateSelfCareMetrics } from '@/lib/supabase-service'
 import { PHPAssessment, EmotionalStateMetrics, CopingSkillsMetrics, SelfCareMetrics } from '@/types/assessments'
 
 interface MonthlyTrend {
@@ -373,23 +374,30 @@ export function PHPEmotionalAnalyticsPage() {
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true)
-      console.log('🔄 Loading PHP Emotional Analytics data...')
+      console.log('🔄 Loading PHP Emotional Analytics data from cache...')
       
       try {
-        const data = await fetchPHPAssessments(selectedPatient === 'all' ? undefined : selectedPatient || undefined)
-        setPhpData(data)
+        // Get PHP data from comprehensive cache
+        const allPhpData = await comprehensiveDataService.getPHPAssessments()
+        
+        // Filter by selected patient if needed
+        const filteredData = selectedPatient === 'all' || !selectedPatient 
+          ? allPhpData 
+          : allPhpData.filter(assessment => assessment.groupIdentifier === selectedPatient)
+        
+        setPhpData(filteredData)
         
         // Better detection of data source based on real data patterns
-        const isLiveData = data.length > 0 && 
-          data[0].uniqueId && 
-          !data[0].uniqueId.startsWith('php_') &&
-          data[0].uniqueId.length > 10 // Real patient IDs are longer
+        const isLiveData = filteredData.length > 0 && 
+          filteredData[0].uniqueId && 
+          !filteredData[0].uniqueId.startsWith('php_') &&
+          filteredData[0].uniqueId.length > 10 // Real patient IDs are longer
         
         setDataSource(isLiveData ? 'live' : 'demo')
-        console.log(`✅ Loaded ${data.length} PHP assessments (${isLiveData ? 'LIVE' : 'DEMO'} data)`)
+        console.log(`✅ Loaded ${filteredData.length} PHP assessments from cache (${isLiveData ? 'LIVE' : 'DEMO'} data)`)
         
       } catch (error) {
-        console.error('❌ Error loading PHP data:', error)
+        console.error('❌ Error loading PHP data from cache:', error)
         setPhpData([])
         setDataSource('demo')
       } finally {

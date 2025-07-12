@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useDashboardStore } from "@/store/dashboard-store"
-import { supabaseService } from "@/lib/supabase-service"
+import { comprehensiveDataService } from "@/lib/comprehensive-data-service"
 import { Header } from "@/components/header"
 import { NavigationTabs } from "@/components/navigation-tabs"
 import { PatientSelector } from "@/components/patient-selector"
@@ -27,6 +27,8 @@ const tabs = [
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("welcome")
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadingStatus, setLoadingStatus] = useState("Initializing...")
   const { 
     setPatients, 
     setAssessmentScores, 
@@ -40,55 +42,39 @@ export default function Dashboard() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log('🚀 Loading dashboard data from Supabase...')
+        setIsLoading(true)
+        setLoadingStatus("Loading comprehensive healthcare data...")
+        console.log('🚀 Loading all dashboard data using optimized Supabase queries...')
         
-        // Load all data concurrently for better performance
-        const [patients, assessments, stats] = await Promise.all([
-          supabaseService.getPatients(),
-          supabaseService.getAllAssessments(),
-          supabaseService.getDashboardStats()
-        ])
-
-        // Set basic data first
-        setPatients(patients)
-        setAssessmentScores(assessments)
-        setDashboardStats(stats)
-
-        // Load substance history from multiple sources
-        console.log('🔍 Loading substance history data...')
-        try {
-          const [substanceHistory, bpsSubstanceData] = await Promise.all([
-            supabaseService.getSubstanceHistory(),
-            supabaseService.getBPSSubstanceData()
-          ])
-
-          // Combine both data sources, preferring Patient Substance History table
-          const combinedSubstanceHistory = [...substanceHistory]
-          
-          // Add BPS data for patients not in Patient Substance History
-          const existingPatients = new Set(substanceHistory.map(item => item.patientId))
-          bpsSubstanceData.forEach(item => {
-            if (!existingPatients.has(item.patientId)) {
-              combinedSubstanceHistory.push(item)
-            }
-          })
-
-          setSubstanceHistory(combinedSubstanceHistory)
-          console.log(`✅ Loaded substance history: ${substanceHistory.length} from Patient Substance History, ${bpsSubstanceData.length} from BPS, ${combinedSubstanceHistory.length} total`)
-        } catch (substanceError) {
-          console.error('❌ Error loading substance history:', substanceError)
-          setSubstanceHistory([])
-        }
-
-        // For now, use empty arrays for BPS, PHP, and AHCM assessments
-        // These can be replaced with actual Supabase calls when needed
-        setBPSAssessments([])
-        setPHPDailyAssessments([])
+        // Load all data at once using comprehensive data service
+        const dataCache = await comprehensiveDataService.loadAllData()
+        
+        setLoadingStatus("Setting up dashboard...")
+        
+        // Set all data from cache
+        setPatients(dataCache.patients)
+        setAssessmentScores(dataCache.assessments)
+        setSubstanceHistory(dataCache.substanceHistory)
+        setBPSAssessments(dataCache.bpsAssessments)
+        setPHPDailyAssessments(dataCache.phpAssessments)
+        setDashboardStats(dataCache.dashboardStats)
+        
+        // AHCM assessments not yet implemented
         setAHCMAssessments([])
 
-        console.log(`🎉 Dashboard data loading completed: ${patients.length} patients, ${assessments.length} assessments`)
+        setLoadingStatus("Complete!")
+        console.log(`🎉 Comprehensive dashboard data loading completed:`)
+        console.log(`  📋 ${dataCache.patients.length} patients`)
+        console.log(`  📊 ${dataCache.assessments.length} assessments`)
+        console.log(`  💊 ${dataCache.substanceHistory.length} substance history records`)
+        console.log(`  🏥 ${dataCache.phpAssessments.length} PHP assessments`)
+        console.log(`  🧠 ${dataCache.bpsAssessments.length} BPS assessments`)
+        
+        // Start background refresh for keeping data up-to-date
+        comprehensiveDataService.startBackgroundRefresh()
       } catch (error) {
-        console.error('💥 Error loading dashboard data:', error)
+        console.error('💥 Error loading comprehensive dashboard data:', error)
+        setLoadingStatus("Error loading data")
         // Set empty states to prevent UI crashes
         setPatients([])
         setAssessmentScores([])
@@ -96,11 +82,19 @@ export default function Dashboard() {
         setBPSAssessments([])
         setPHPDailyAssessments([])
         setAHCMAssessments([])
+        setDashboardStats({
+          totalPatients: 0,
+          totalAssessments: 0,
+          avgAssessments: 0,
+          highRiskPatients: 0
+        })
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    // Start loading data after a short delay to allow UI to render
-    setTimeout(loadData, 100)
+    // Start loading data immediately
+    loadData()
   }, [setPatients, setAssessmentScores, setBPSAssessments, setSubstanceHistory, setPHPDailyAssessments, setAHCMAssessments, setDashboardStats])
 
   const renderActiveTab = () => {
@@ -142,7 +136,18 @@ export default function Dashboard() {
     }
   }
 
-  // Remove loading screen - dashboard loads immediately
+  // Show loading screen while data is being loaded
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-white mb-2">Loading Healthcare Dashboard</h2>
+          <p className="text-gray-400">{loadingStatus}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-900">

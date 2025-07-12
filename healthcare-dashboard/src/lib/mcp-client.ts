@@ -26,7 +26,17 @@ class MCPClient {
   constructor(serverUrl = 'http://localhost:8000') {
     this.serverUrl = serverUrl
     // Use the Next.js API proxy to avoid CORS issues
-    this.mcpEndpoint = '/api/mcp'
+    // Check if we're in a browser environment or server environment
+    if (typeof window !== 'undefined') {
+      // Client-side: use relative URL
+      this.mcpEndpoint = '/api/mcp'
+    } else {
+      // Server-side: construct absolute URL
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : 'http://localhost:3000'
+      this.mcpEndpoint = `${baseUrl}/api/mcp`
+    }
     this.requestId = 1
   }
 
@@ -310,28 +320,60 @@ class MCPClient {
     return response
   }
 
-  async getPatientAssessments(patientId: string): Promise<MCPResponse> {
+  async getPatientAssessments(
+    patientId: string, 
+    options?: {
+      assessment_types?: string[],
+      date_range?: { start: string, end: string },
+      limit?: number
+    }
+  ): Promise<MCPResponse> {
     try {
-      // Try the combined assessment function first
-      const allAssessments = await this.callMCPTool('get_all_patient_assessments', { patient_id: patientId })
+      // Build parameters for the MCP tool call
+      const params: any = { patient_id: patientId }
+      
+      if (options?.assessment_types) {
+        params.assessment_types = options.assessment_types
+      }
+      if (options?.date_range) {
+        params.date_range = options.date_range
+      }
+      if (options?.limit) {
+        params.limit = options.limit
+      }
+      
+      // Try the combined assessment function first with flexible parameters
+      const allAssessments = await this.callMCPTool('get_all_patient_assessments', params)
       if (allAssessments.success) {
         return allAssessments
       }
 
       // If combined function fails, get individual assessments and combine them
       console.log('Combined assessments failed, fetching individual assessment types...')
-      const assessmentTypes = ['ptsd', 'phq', 'gad', 'who', 'ders']
+      const assessmentTypes = options?.assessment_types || ['ptsd', 'phq', 'gad', 'who', 'ders']
       const individualResults: any = {
         patient_id: patientId,
         total_assessments: 0,
         assessment_breakdown: {},
-        summary: {}
+        summary: {},
+        filters_applied: {
+          assessment_types: assessmentTypes,
+          date_range: options?.date_range,
+          limit: options?.limit
+        }
       }
 
       for (const type of assessmentTypes) {
         try {
           const toolName = `get_patient_${type}_scores`
-          const result = await this.callMCPTool(toolName, { patient_id: patientId })
+          const toolParams: any = { patient_id: patientId }
+          
+          // Pass limit to individual tools if specified
+          if (options?.limit) {
+            toolParams.limit = options.limit
+          }
+          
+          const result = await this.callMCPTool(toolName, toolParams)
           
           if (result.success && result.data) {
             const assessmentData = result.data

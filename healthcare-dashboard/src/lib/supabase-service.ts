@@ -436,14 +436,26 @@ class SupabaseService {
       const patients = await this.getPatients()
       const allAssessments: AssessmentScore[] = []
 
-      // Fetch assessments for first 10 patients to avoid overwhelming the dashboard
-      const firstPatients = patients.slice(0, 10)
+      // Fetch assessments for first 20 patients and ensure 0156b2ff0c18 is included
+      let patientsToFetch = patients.slice(0, 20)
       
-      for (const patient of firstPatients) {
+      // Ensure patient 0156b2ff0c18 is included if not in the first 20
+      const targetPatient = '0156b2ff0c18'
+      if (!patientsToFetch.some(p => p.id === targetPatient)) {
+        const targetPatientObj = patients.find(p => p.id === targetPatient)
+        if (targetPatientObj) {
+          patientsToFetch = [targetPatientObj, ...patientsToFetch.slice(0, 19)]
+        }
+      }
+      
+      console.log(`📊 Loading assessments for ${patientsToFetch.length} patients (including ${targetPatient})`)
+      
+      for (const patient of patientsToFetch) {
         const assessments = await this.getPatientAssessments(patient.id)
         allAssessments.push(...assessments)
       }
 
+      console.log(`✅ Loaded ${allAssessments.length} total assessments from Supabase`)
       return allAssessments
     } catch (error) {
       console.error('Error fetching all assessments:', error)

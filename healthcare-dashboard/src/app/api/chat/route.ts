@@ -132,8 +132,24 @@ class ServerMCPClient {
     return this.callMCPTool('calculate_composite_risk_score', { patient_id: patientId })
   }
 
-  async getPatientAssessments(patientId: string) {
-    return this.callMCPTool('get_all_patient_assessments', { patient_id: patientId })
+  async getPatientAssessments(patientId: string, options?: {
+    assessment_types?: string[],
+    date_range?: { start: string, end: string },
+    limit?: number
+  }) {
+    const params: any = { patient_id: patientId }
+    
+    if (options?.assessment_types) {
+      params.assessment_types = options.assessment_types
+    }
+    if (options?.date_range) {
+      params.date_range = options.date_range
+    }
+    if (options?.limit) {
+      params.limit = options.limit
+    }
+    
+    return this.callMCPTool('get_all_patient_assessments', params)
   }
 
   async getHighRiskSubstanceUsers() {
@@ -189,7 +205,7 @@ export async function POST(req: Request) {
           textLength: step.text.length,
           toolCalls: step.toolCalls?.length || 0,
           toolResults: step.toolResults?.length || 0,
-          isContinued: step.response?.isContinued || false
+          isContinued: false
         })
         console.log(`📋 Step text preview:`, step.text.substring(0, 200) + '...')
       },
@@ -204,36 +220,327 @@ export async function POST(req: Request) {
         })
         console.log('🎯 Generated text preview:', result.text.substring(0, 200) + '...')
       },
-      system: `You are a Healthcare Analytics Assistant. When users ask about patient data:
+      system: `You are a Healthcare Analytics Assistant providing intelligent, targeted analysis of clinical data. Use smart data filtering to optimize performance and provide relevant insights.
 
-1. FIRST: Use the appropriate tool to get the data
-2. SECOND: Always provide a detailed analysis of the results in text form
+## 🏥 PATIENT-SPECIFIC ANALYSIS
 
-CRITICAL: After calling any tool, you MUST continue with a comprehensive text response explaining what the data means and providing clinical insights.
+**CRITICAL: When user asks about a specific patient, extract the patient ID and use real data tools.**
 
-Format your response like:
-"Based on the risk analysis for patient [ID]:
+**Patient ID Detection Patterns:**
+- "comprehensive clinical assessment of patient [ID]" → get_patient_assessments + analyze_patient_risk
+- "show me patient [ID] assessment" → get_patient_assessments
+- "patient [ID] risk analysis" → analyze_patient_risk
+- "assess patient [ID]" → get_patient_assessments + analyze_patient_risk
+- "evaluate patient [ID]" → get_patient_assessments + analyze_patient_risk
+- "[ID] clinical report" → get_patient_assessments + analyze_patient_risk
 
-**Overall Risk Assessment:** [explanation]
-**Key Findings:** [bullet points]  
-**Clinical Recommendations:** [actionable advice]"
+**Patient List Detection Patterns:**
+- "show available patients" → get_patient_count
+- "list patients" → get_patient_count
+- "what patients are available" → get_patient_count
+- "show patient IDs" → get_patient_count
+- "which patients can I analyze" → get_patient_count
 
-Never stop after just calling a tool - always provide the analysis!`,
+**Patient ID Formats to Recognize:**
+- AHCM### (e.g., AHCM001, AHCM002)
+- BPS### (e.g., BPS001, BPS002) 
+- DEMO### (e.g., DEMO001)
+- UUID format (e.g., 0156b2ff0c18)
+- Any alphanumeric pattern that looks like a patient identifier
+
+**WORKFLOW FOR PATIENT-SPECIFIC QUERIES:**
+1. **Extract patient ID** from user query (case-insensitive)
+2. **Determine scope** - comprehensive vs specific assessment type
+3. **Call appropriate tools** with the extracted patient ID:
+   - For comprehensive reports: test_clinical_visualization + get_patient_assessments + analyze_patient_risk
+   - For specific assessment: get_patient_specific_scores
+   - For risk focus: analyze_patient_risk
+4. **Format real data** using professional clinical report templates
+5. **If patient not found**, suggest calling get_patient_count to see available patients
+
+**CRITICAL: For Comprehensive Reports with Charts**
+When users request comprehensive reports, assessments, or evaluations of individual patients, you MUST call test_clinical_visualization with include_chart=true to provide both tabular data AND visual charts.
+
+**Comprehensive Report Triggers:**
+- "comprehensive clinical assessment of patient [ID]"
+- "comprehensive report for patient [ID]"
+- "comprehensive evaluation of patient [ID]"
+- "detailed assessment of patient [ID]"
+- "full clinical report for patient [ID]"
+- "visual assessment of patient [ID]"
+- "charts and assessment for patient [ID]"
+
+**Example Workflow:**
+User: "Show comprehensive clinical assessment of patient AHCM001"
+1. Extract: patient_id = "AHCM001"
+2. Call: test_clinical_visualization(patient_id="AHCM001", include_chart=true) 
+3. Output: The content from test_clinical_visualization EXACTLY as provided (includes both table and charts)
+4. Optional: Call additional tools if more specific analysis needed
+
+## 🎨 VISUALIZATION TESTING COMMANDS (For Demo/Examples Only)
+
+**When user asks for examples, demos, or samples WITHOUT specific patient ID:**
+- "show me a sample clinical report" → CALL test_clinical_visualization tool
+- "create a patient assessment summary" → CALL test_clinical_visualization tool  
+- "generate clinical dashboard view" → CALL test_clinical_visualization tool
+- "display patient risk assessment" → CALL test_clinical_visualization tool
+- "show comprehensive patient evaluation" → CALL test_clinical_visualization tool
+- "create clinical visualization example" → CALL test_clinical_visualization tool
+- "demonstrate clinical reporting format" → CALL test_clinical_visualization tool
+
+**CRITICAL INSTRUCTION FOR TEST VISUALIZATION:**
+When the test_clinical_visualization tool returns data with a "content" field, you MUST output that content EXACTLY as provided. DO NOT reformat, interpret, or modify the content. The content contains special tags [ASSESSMENT_TABLE] and [CHART_DATA] that are required for the frontend to render tables and charts.
+
+**PRIORITY SYSTEM FOR PATIENT REPORTS:**
+1. **FIRST CHOICE:** Use test_clinical_visualization for comprehensive reports (includes real data + charts)
+2. **SECOND CHOICE:** Use get_patient_assessments + analyze_patient_risk for text-only detailed analysis
+3. **THIRD CHOICE:** Use get_patient_specific_scores for single assessment type focus
+
+**Example Response Pattern:**
+1. Call test_clinical_visualization tool with patient_id and include_chart=true
+2. Take the "content" field from the tool result
+3. Output that content EXACTLY without any modifications
+4. The content automatically includes both professional clinical text AND visual charts
+
+## 🎯 INTELLIGENT DATA FETCHING STRATEGY
+
+**STEP 1: ANALYZE USER INTENT**
+- Identify specific conditions mentioned (PTSD, depression, anxiety, etc.)
+- Determine scope needed (individual patient vs population)
+- Note time references (recent, this year, last 30 days)
+
+**STEP 2: CHOOSE APPROPRIATE TOOL PARAMETERS**
+- **Specific Queries**: Use filtered assessment types for targeted analysis
+- **Comprehensive Queries**: Use all assessment types for complete clinical picture
+- **Population Analysis**: Default to ALL patients unless specific subset requested
+
+**STEP 3: PROVIDE COMPREHENSIVE ANALYSIS**
+After calling any tool, you MUST provide detailed clinical interpretation
+
+## 📊 QUERY OPTIMIZATION EXAMPLES
+
+**Targeted Queries (Use Filtering):**
+- "How is patient X's PTSD?" → assessment_types: ['ptsd']
+- "Show anxiety levels for patient Y" → assessment_types: ['gad']
+- "Recent mood assessments" → assessment_types: ['phq', 'gad'], limit: 5
+- "This year's depression scores" → assessment_types: ['phq'], date_range: 2024
+
+**Comprehensive Queries (Use All Data):**
+- "Complete clinical picture for patient Z" → No filtering (all assessments)
+- "Overall risk assessment" → No filtering (needs all data for risk calculation)
+- "Which patients need immediate attention?" → All patients, all assessments
+
+## 🧠 CLINICAL INTERPRETATION GUIDELINES
+
+**For Targeted Analysis:**
+"🎯 **CLINICAL ASSESSMENT REPORT**
+
+**Patient ID:** [Patient ID]
+**Assessment Focus:** [Specific condition analysis]
+**Date Range:** [Time period analyzed]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 **CLINICAL FINDINGS**
+
+**Primary Assessment:** [Assessment type - e.g., PTSD (PCL-5)]
+   • **Current Score:** [Score] ([Severity level])
+   • **Clinical Significance:** [Interpretation]
+   • **Symptom Profile:** [Key symptoms observed]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 **TREND ANALYSIS**
+   • **Trajectory:** [Improving/Declining/Stable]
+   • **Notable Changes:** [Significant variations]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 **CLINICAL RECOMMENDATIONS**
+   1. **Immediate Actions:** [Urgent interventions needed]
+   2. **Ongoing Treatment:** [Continued therapy recommendations]
+   3. **Monitoring:** [Areas requiring close observation]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 **Note:** This focused analysis examined [condition]. For comprehensive multi-domain assessment, I can analyze all clinical instruments."
+
+**For Comprehensive Analysis:**
+"🏥 **COMPREHENSIVE CLINICAL ASSESSMENT**
+
+**Patient ID:** [Patient ID]
+**Assessment Date:** [Latest assessment date]  
+**Total Assessments Reviewed:** [Number]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚨 **RISK STRATIFICATION**
+
+**Overall Risk Level:** [HIGH/MODERATE/LOW]
+**Composite Risk Score:** [Score/100]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 **MULTI-DOMAIN ASSESSMENT SUMMARY**
+
+🧠 **PTSD (PCL-5):** [Score]/80 → [Level] → [↑↓→] → Priority: [High/Med/Low]
+
+😔 **Depression (PHQ-9):** [Score]/27 → [Level] → [↑↓→] → Priority: [High/Med/Low]
+
+😰 **Anxiety (GAD-7):** [Score]/21 → [Level] → [↑↓→] → Priority: [High/Med/Low]
+
+🏃 **Function (WHO-DAS):** [Score]/25 → [Level] → [↑↓→] → Priority: [High/Med/Low]
+
+💭 **Emotion Reg (DERS):** [Score]/180 → [Level] → [↑↓→] → Priority: [High/Med/Low]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 **CLINICAL PRIORITIES**
+
+🔴 **HIGH PRIORITY (Immediate Attention):**
+   • [Urgent clinical issues requiring immediate intervention]
+
+🟡 **MEDIUM PRIORITY (Active Monitoring):**
+   • [Issues requiring ongoing attention and treatment adjustment]
+
+🟢 **LOW PRIORITY (Maintenance):**
+   • [Stable areas requiring routine monitoring]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 **EVIDENCE-BASED RECOMMENDATIONS**
+
+**🎯 Immediate Interventions:**
+   1. [Specific therapeutic interventions]
+   2. [Medication considerations]
+   3. [Safety planning if needed]
+
+**⚙️ Treatment Adjustments:**
+   1. [Therapy modifications]
+   2. [Frequency adjustments]
+   3. [Referral considerations]
+
+**🎯 Long-term Goals:**
+   1. [Recovery objectives]
+   2. [Functional improvement targets]
+   3. [Relapse prevention strategies]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 **CLINICAL TRAJECTORY**
+
+**✅ Positive Indicators:**
+   • [Areas showing improvement]
+
+**⚠️ Concerning Trends:**
+   • [Areas requiring enhanced intervention]
+
+**📅 Next Review:** [Recommended timeframe for reassessment]"
+
+## 🎯 PERFORMANCE-AWARE RESPONSES
+
+**Light Queries (Fast Response):**
+- Acknowledge the focused scope
+- Provide deep insights within that scope
+- Offer to expand analysis if needed
+
+**Heavy Queries (Comprehensive):**
+- Highlight the comprehensive nature
+- Prioritize findings by clinical urgency
+- Provide population-level context
+
+## 🔍 SMART FILTERING LOGIC
+
+**Assessment Type Keywords:**
+- PTSD/trauma/PCL → ['ptsd']
+- Depression/PHQ/mood → ['phq']
+- Anxiety/GAD/worry → ['gad']
+- Functioning/WHO/disability → ['who']
+- Emotion regulation/DERS → ['ders']
+- Mood disorders → ['phq', 'gad']
+- Trauma and mood → ['ptsd', 'phq', 'gad']
+
+**Time Keywords:**
+- "recent/latest" → limit: 5
+- "last 30 days" → date_range with 30-day window
+- "this year/2024" → date_range for current year
+- "over time/progression" → No limit (get full history)
+
+**Scope Keywords:**
+- "all patients/population" → No patient filtering
+- "patient X" → Specific patient ID
+- "high-risk patients" → Use risk identification tools
+
+## 💡 EFFICIENCY PRINCIPLES
+
+1. **Match Data to Question**: Don't fetch depression data for PTSD questions
+2. **Optimize for Speed**: Use filtering when possible
+3. **Provide Value**: Always explain what the data means clinically
+4. **Offer Expansion**: Suggest broader analysis when relevant
+5. **Prioritize Urgency**: Lead with high-risk findings regardless of query scope
+
+## 🎨 PROFESSIONAL FORMATTING STANDARDS
+
+**Use these formatting elements for professional clinical reports:**
+
+1. **Section Headers:** Use 🏥 **TITLE** format (no markdown headers)
+2. **Visual Separators:** Use ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ lines
+3. **Visual Indicators:** 
+   - 🚨 For high priority/urgent items
+   - 🔴 For high priority actions
+   - 🟡 For medium priority items
+   - 🟢 For low priority/stable items
+   - 📊 For data/statistics
+   - 🎯 For recommendations
+   - 📈 For trends/progress
+   - 📋 For clinical notes
+   - ✅ For positive indicators
+   - ⚠️ For concerning trends
+
+4. **Score Presentation:** Always include score/maximum (e.g., "43/80" not just "43")
+5. **Bullet Points:** Use • for clean bullet formatting (not markdown lists)
+6. **Assessment Layout:** Use → arrows for flow (Score → Severity → Trend → Priority)
+7. **Clinical Language:** Use professional medical terminology
+8. **Actionable Items:** Number recommendations for clarity
+
+**Example Score Interpretation:**
+- **PTSD (PCL-5):** 43/80 (Moderate severity)
+- **Depression (PHQ-9):** 11/27 (Moderate severity)
+- **Anxiety (GAD-7):** 15/21 (Severe)
+
+**Always include:**
+- Patient identifier
+- Assessment dates
+- Clinical significance of scores
+- Trend analysis
+- Prioritized recommendations
+- Next steps/follow-up
+
+Remember: Be smart about data fetching but comprehensive in clinical interpretation. The goal is to provide the RIGHT insights efficiently, not just the MOST data.`,
     
     tools: {
       get_patient_count: tool({
-        description: "Get the total number of patients in the system",
-        parameters: z.object({}),
-        execute: async () => {
+        description: "Get the total number of patients in the system with comprehensive patient list. Use this when users ask 'show available patients', 'list patients', 'what patients are available', etc.",
+        parameters: z.object({
+          show_sample_ids: z.boolean().optional().describe("Whether to show sample patient IDs (default: true)"),
+          limit: z.number().optional().describe("Maximum number of patient IDs to display (default: 20)")
+        }),
+        execute: async ({ show_sample_ids = true, limit = 20 }) => {
           const result = await serverMcpClient.getAllPatients()
           if (result.success && result.data) {
-            return {
-              total_patients: result.data.length,
-              patient_ids: result.data.slice(0, 5), // Show first 5 as examples
-              message: `Found ${result.data.length} patients in the clinical database`
+            const totalPatients = result.data.length
+            const patientList = result.data.slice(0, limit)
+            
+            const response: any = {
+              total_patients: totalPatients,
+              displayed_count: patientList.length,
+              message: `Found ${totalPatients} unique patients in the clinical database`,
+              patient_ids: show_sample_ids ? patientList : undefined
             }
+            
+            return response
           }
-          return { error: "Unable to retrieve patient count" }
+          return { error: "Unable to retrieve patient list" }
         },
       }),
 
@@ -268,18 +575,41 @@ Never stop after just calling a tool - always provide the analysis!`,
       }),
 
       get_patient_assessments: tool({
-        description: "Retrieve detailed assessment data for a specific patient",
+        description: "Retrieve detailed assessment data for a specific patient with flexible filtering options",
         parameters: z.object({
           patient_id: z.string().describe("The patient identifier"),
+          assessment_types: z.array(z.string()).optional().describe("Optional: Filter by assessment types ['ptsd', 'phq', 'gad', 'who', 'ders']"),
+          date_range: z.object({
+            start: z.string().describe("Start date YYYY-MM-DD"),
+            end: z.string().describe("End date YYYY-MM-DD")
+          }).optional().describe("Optional: Filter by date range"),
+          limit: z.number().optional().describe("Optional: Limit number of assessments per type")
         }),
-        execute: async ({ patient_id }) => {
-          const result = await serverMcpClient.getPatientAssessments(patient_id)
+        execute: async ({ patient_id, assessment_types, date_range, limit }) => {
+          const options: any = {}
+          
+          if (assessment_types && assessment_types.length > 0) {
+            options.assessment_types = assessment_types
+          }
+          if (date_range) {
+            options.date_range = date_range
+          }
+          if (limit) {
+            options.limit = limit
+          }
+          
+          const result = await serverMcpClient.getPatientAssessments(
+            patient_id, 
+            Object.keys(options).length > 0 ? options : undefined
+          )
+          
           if (result.success && result.data) {
             return {
               patient_id,
               total_assessments: result.data.total_assessments,
               assessment_breakdown: result.data.assessment_breakdown,
-              summary: result.data.summary
+              summary: result.data.summary,
+              filters_applied: result.data.filters_applied || {}
             }
           }
           return { error: `Unable to retrieve assessments for patient ${patient_id}` }
@@ -287,22 +617,29 @@ Never stop after just calling a tool - always provide the analysis!`,
       }),
 
       identify_high_risk_patients: tool({
-        description: "Identify patients who need immediate clinical attention based on risk analysis",
+        description: "Identify patients who need immediate clinical attention based on comprehensive risk analysis of ALL patients",
         parameters: z.object({
-          sample_size: z.number().optional().describe("Number of patients to analyze (default: 5)"),
+          include_all_patients: z.boolean().optional().describe("Whether to analyze all patients (default: true)"),
         }),
-        execute: async ({ sample_size = 5 }) => {
+        execute: async ({ include_all_patients = true }) => {
+          console.log('🎯 Starting comprehensive risk analysis for ALL patients...')
+          
           const patientsResult = await serverMcpClient.getAllPatients()
           if (!patientsResult.success || !patientsResult.data) {
             return { error: "Unable to retrieve patient list" }
           }
 
+          // Get ALL patient IDs - no sample size limitation
           const patientIds = Array.isArray(patientsResult.data) ? 
-            patientsResult.data.slice(0, sample_size) : 
-            patientsResult.data.patient_ids?.slice(0, sample_size) || []
+            patientsResult.data : 
+            patientsResult.data.patient_ids || []
+
+          console.log(`📊 Analyzing risk for ${patientIds.length} total patients...`)
 
           const riskPatients = []
+          const allPatientRisks = []
           let analyzedCount = 0
+          let errorCount = 0
 
           for (const patientId of patientIds) {
             try {
@@ -311,7 +648,16 @@ Never stop after just calling a tool - always provide the analysis!`,
                 analyzedCount++
                 const riskData = riskResult.data
                 
-                if (riskData.overall_risk !== 'low' || riskData.composite_score > 2.5 || 
+                // Store ALL patient risk data for comprehensive reporting
+                allPatientRisks.push({
+                  patient_id: patientId,
+                  overall_risk: riskData.overall_risk,
+                  composite_score: riskData.composite_score,
+                  domains_assessed: riskData.domains_assessed
+                })
+                
+                // Flag patients needing immediate attention
+                if (riskData.overall_risk !== 'low' || riskData.composite_score > 2.0 || 
                    (riskData.composite_score > 1.2 && riskData.risk_domains?.substance_use)) {
                   riskPatients.push({
                     patient_id: patientId,
@@ -323,15 +669,25 @@ Never stop after just calling a tool - always provide the analysis!`,
                 }
               }
             } catch (error) {
+              errorCount++
               console.warn(`Failed to analyze ${patientId}:`, error)
             }
           }
 
           return {
-            analyzed_count: analyzedCount,
+            total_patients: patientIds.length,
+            successfully_analyzed: analyzedCount,
+            analysis_errors: errorCount,
+            coverage_percentage: Math.round((analyzedCount / patientIds.length) * 100),
             high_risk_patients: riskPatients,
-            total_high_risk: riskPatients.length,
-            analysis_summary: `Analyzed ${analyzedCount} patients, found ${riskPatients.length} requiring attention`
+            all_patient_risks: allPatientRisks,
+            patients_needing_attention: riskPatients.length,
+            risk_distribution: {
+              high: allPatientRisks.filter(p => p.overall_risk === 'high').length,
+              moderate: allPatientRisks.filter(p => p.overall_risk === 'moderate').length,
+              low: allPatientRisks.filter(p => p.overall_risk === 'low').length
+            },
+            analysis_summary: `Comprehensive analysis of ${patientIds.length} total patients. Successfully analyzed ${analyzedCount} patients (${Math.round((analyzedCount/patientIds.length)*100)}% coverage). Found ${riskPatients.length} patients requiring immediate clinical attention.`
           }
         },
       }),
@@ -388,6 +744,432 @@ Never stop after just calling a tool - always provide the analysis!`,
             }
           }
           return { error: `Unable to retrieve ${assessment_type} scores for patient ${patient_id}` }
+        },
+      }),
+
+      test_clinical_visualization: tool({
+        description: "Generate a comprehensive clinical assessment report with interactive tables and charts. If patient_id matches real data, use actual assessments; otherwise use demo data for visualization examples.",
+        parameters: z.object({
+          patient_id: z.string().optional().describe("Patient ID to use for report (default: DEMO001)"),
+          include_chart: z.boolean().optional().describe("Include interactive charts (default: true)")
+        }),
+        execute: async ({ patient_id = "DEMO001", include_chart = true }) => {
+          // Try to get real patient data first
+          let tableData: any[] = [], chartData: any[] = [], timelineData: any[] = [], trendData: any = {}, historicalData: any = {}, isRealData = false, riskLevel = "MODERATE-HIGH", riskScore = 58
+          
+          if (patient_id !== "DEMO001") {
+            try {
+              // Attempt to get real patient assessments and risk data
+              console.log(`🔍 Debug: Attempting to get assessments for ${patient_id}`)
+              const assessmentResult = await serverMcpClient.getPatientAssessments(patient_id)
+              console.log(`🔍 Debug: Assessment result success: ${assessmentResult.success}`)
+              
+              const riskResult = await serverMcpClient.calculateCompositeRiskScore(patient_id)
+              console.log(`🔍 Debug: Risk result success: ${riskResult.success}`)
+              
+              if (assessmentResult.success && assessmentResult.data) {
+                isRealData = true
+                // The MCP data might be wrapped in structuredContent
+                const data = assessmentResult.data.structuredContent || assessmentResult.data
+                
+                // Debug: Log the actual data structure
+                console.log(`🔍 Debug assessment data for ${patient_id}:`, JSON.stringify(data, null, 2))
+                
+                // Get risk information
+                if (riskResult.success && riskResult.data) {
+                  // The MCP risk data might also be wrapped in structuredContent
+                  const riskData = riskResult.data.structuredContent || riskResult.data
+                  riskLevel = riskData.overall_risk?.toUpperCase() || "MODERATE"
+                  riskScore = Math.round(riskData.composite_score * 20) || 58 // Scale to 100
+                  console.log(`🔍 Debug risk data for ${patient_id}:`, JSON.stringify(riskData, null, 2))
+                }
+                
+                // Define functions to get scores and historical data
+                const getLatestScore = (assessmentType: string) => {
+                  if (riskResult.success && riskResult.data) {
+                    const riskData = riskResult.data.structuredContent || riskResult.data
+                    const riskDomains = riskData.risk_domains
+                    if (riskDomains) {
+                      switch (assessmentType) {
+                        case 'ptsd': return riskDomains.ptsd?.total_score || 0
+                        case 'phq': return riskDomains.depression?.total_score || 0
+                        case 'gad': return riskDomains.anxiety?.total_score || 0
+                        case 'who': return riskDomains.wellbeing?.total_score || 0
+                        case 'ders': return riskDomains.emotion_regulation?.total_score || 0
+                        default: return 0
+                      }
+                    }
+                  }
+                  return 0
+                }
+
+                // Get all historical assessment data for trends and timeline
+                const assessmentTypes = ['ptsd', 'phq', 'gad', 'who', 'ders']
+                const allTimelineEntries: any[] = []
+                
+                // Make sure we have the total_assessments count from the data
+                const totalAssessmentsFromData = data.total_assessments || 0
+                console.log(`🔍 Debug: Total assessments from data: ${totalAssessmentsFromData}`)
+                
+                assessmentTypes.forEach(type => {
+                  // Fix: Use 'assessments' instead of 'data' - this is the correct property from MCP
+                  const assessments = data.assessment_breakdown?.[type]?.assessments || []
+                  console.log(`🔍 Debug ${type} assessments for ${patient_id}:`, assessments.length, 'records')
+                  
+                  // Log the first assessment to see the structure
+                  if (assessments.length > 0) {
+                    console.log(`🔍 Debug ${type} first assessment:`, JSON.stringify(assessments[0], null, 2))
+                  }
+                  
+                  // Filter out assessments with empty dates and map to timeline format
+                  const validAssessments = assessments.filter((assessment: any) => 
+                    assessment.assessment_date && assessment.assessment_date.trim() !== ''
+                  )
+                  
+                  historicalData[type] = validAssessments.map((assessment: any) => ({
+                    date: assessment.assessment_date,
+                    score: assessment.calculated_total || assessment.total_score || 0,
+                    type: type
+                  })).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                  
+                  // Add to timeline (only valid assessments with dates)
+                  validAssessments.forEach((assessment: any) => {
+                    allTimelineEntries.push({
+                      date: assessment.assessment_date,
+                      type: type,
+                      score: assessment.calculated_total || assessment.total_score || 0,
+                      domain: type === 'ptsd' ? 'PTSD (PCL-5)' : 
+                              type === 'phq' ? 'Depression (PHQ-9)' : 
+                              type === 'gad' ? 'Anxiety (GAD-7)' : 
+                              type === 'who' ? 'Function (WHO-DAS)' : 'Emotion Reg (DERS)'
+                    })
+                  })
+                  
+                  console.log(`🔍 Debug ${type} valid assessments with dates:`, validAssessments.length, 'out of', assessments.length)
+                })
+                
+                console.log(`🔍 Debug timeline data for ${patient_id}:`, allTimelineEntries.length, 'total entries')
+                console.log(`🔍 Debug total assessments from data:`, data.total_assessments)
+                console.log(`🔍 Debug assessment breakdown keys:`, Object.keys(data.assessment_breakdown || {}))
+                
+                // If no historical data found, create timeline from current scores
+                if (allTimelineEntries.length === 0) {
+                  console.log(`🔍 Debug: No timeline entries found, creating from current scores`)
+                  const currentDate = new Date().toISOString().split('T')[0]
+                  
+                  assessmentTypes.forEach(type => {
+                    const currentScore = getLatestScore(type)
+                    if (currentScore > 0) {
+                      allTimelineEntries.push({
+                        date: currentDate,
+                        type: type,
+                        score: currentScore,
+                        domain: type === 'ptsd' ? 'PTSD (PCL-5)' : 
+                                type === 'phq' ? 'Depression (PHQ-9)' : 
+                                type === 'gad' ? 'Anxiety (GAD-7)' : 
+                                type === 'who' ? 'Function (WHO-DAS)' : 'Emotion Reg (DERS)'
+                      })
+                      
+                      // Also update historical data
+                      historicalData[type] = [{
+                        date: currentDate,
+                        score: currentScore,
+                        type: type
+                      }]
+                    }
+                  })
+                  console.log(`🔍 Debug: Created ${allTimelineEntries.length} timeline entries from current scores`)
+                }
+
+                // Sort timeline by date
+                timelineData = allTimelineEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+                // Calculate trends for each domain
+                trendData = {}
+                assessmentTypes.forEach(type => {
+                  const scores = historicalData[type]
+                  if (scores.length >= 2) {
+                    const firstScore = scores[0].score
+                    const lastScore = scores[scores.length - 1].score
+                    const change = lastScore - firstScore
+                    const percentChange = firstScore > 0 ? ((change / firstScore) * 100) : 0
+                    
+                    trendData[type] = {
+                      trend: change > 0 ? (change > 2 ? "↑" : "→") : (change < -2 ? "↓" : "→"),
+                      change: change,
+                      percentChange: Math.round(percentChange * 10) / 10,
+                      direction: change > 2 ? "Increasing" : change < -2 ? "Decreasing" : "Stable",
+                      assessmentCount: scores.length,
+                      dateRange: `${scores[0].date} to ${scores[scores.length - 1].date}`,
+                      scores: scores
+                    }
+                  } else {
+                    trendData[type] = {
+                      trend: "→",
+                      change: 0,
+                      percentChange: 0,
+                      direction: scores.length === 1 ? "Single assessment" : "Insufficient data",
+                      assessmentCount: scores.length,
+                      dateRange: scores.length > 0 ? scores[0].date : "No data",
+                      scores: scores
+                    }
+                  }
+                })
+                
+                // Final debug log
+                console.log(`🔍 Debug: Final timeline data length: ${timelineData.length}`)
+                console.log(`🔍 Debug: Final trend data:`, Object.keys(trendData).map(key => `${key}: ${trendData[key].assessmentCount} assessments`))
+                
+                // Build current status table
+                tableData = [
+                  {
+                    "domain": "PTSD Checklist (PCL-5)",
+                    "score": getLatestScore("ptsd"),
+                    "maxScore": 80,
+                    "severity": getLatestScore("ptsd") > 50 ? "Severe" : getLatestScore("ptsd") > 30 ? "Moderate" : "Mild",
+                    "trend": trendData.ptsd?.trend || "→",
+                    "priority": getLatestScore("ptsd") > 40 ? "High" : "Medium",
+                    "assessmentCount": trendData.ptsd?.assessmentCount || 0,
+                    "trendDirection": trendData.ptsd?.direction || "Unknown"
+                  },
+                  {
+                    "domain": "Depression Inventory (PHQ-9)",
+                    "score": getLatestScore("phq"),
+                    "maxScore": 27,
+                    "severity": getLatestScore("phq") > 15 ? "Severe" : getLatestScore("phq") > 10 ? "Moderate" : "Mild",
+                    "trend": trendData.phq?.trend || "→",
+                    "priority": getLatestScore("phq") > 15 ? "High" : "Medium",
+                    "assessmentCount": trendData.phq?.assessmentCount || 0,
+                    "trendDirection": trendData.phq?.direction || "Unknown"
+                  },
+                  {
+                    "domain": "Anxiety Disorder Scale (GAD-7)",
+                    "score": getLatestScore("gad"),
+                    "maxScore": 21,
+                    "severity": getLatestScore("gad") > 15 ? "Severe" : getLatestScore("gad") > 10 ? "Moderate" : "Mild",
+                    "trend": trendData.gad?.trend || "→",
+                    "priority": getLatestScore("gad") > 10 ? "High" : "Medium",
+                    "assessmentCount": trendData.gad?.assessmentCount || 0,
+                    "trendDirection": trendData.gad?.direction || "Unknown"
+                  },
+                  {
+                    "domain": "Functional Assessment (WHO-DAS)",
+                    "score": getLatestScore("who"),
+                    "maxScore": 48,
+                    "severity": getLatestScore("who") > 30 ? "Severe Impairment" : getLatestScore("who") > 15 ? "Moderate Impairment" : "Mild Impairment",
+                    "trend": trendData.who?.trend || "→",
+                    "priority": getLatestScore("who") > 25 ? "High" : "Medium",
+                    "assessmentCount": trendData.who?.assessmentCount || 0,
+                    "trendDirection": trendData.who?.direction || "Unknown"
+                  },
+                  {
+                    "domain": "Emotion Regulation (DERS)",
+                    "score": getLatestScore("ders"),
+                    "maxScore": 180,
+                    "severity": getLatestScore("ders") > 120 ? "Severe Difficulty" : getLatestScore("ders") > 80 ? "Moderate Difficulty" : "Mild Difficulty",
+                    "trend": trendData.ders?.trend || "→",
+                    "priority": getLatestScore("ders") > 100 ? "High" : "Low",
+                    "assessmentCount": trendData.ders?.assessmentCount || 0,
+                    "trendDirection": trendData.ders?.direction || "Unknown"
+                  }
+                ]
+                
+                // Current scores for bar chart
+                chartData = [
+                  { "name": "PTSD", "value": getLatestScore("ptsd") },
+                  { "name": "Depression", "value": getLatestScore("phq") },
+                  { "name": "Anxiety", "value": getLatestScore("gad") },
+                  { "name": "Function", "value": getLatestScore("who") },
+                  { "name": "Emotion Reg", "value": getLatestScore("ders") }
+                ]
+              }
+            } catch (error) {
+              console.log(`Could not fetch real data for patient ${patient_id}, using demo data`)
+            }
+          }
+          
+          // Fall back to demo data if real data not available
+          if (!isRealData) {
+            tableData = [
+              {
+                "domain": "PTSD Checklist (PCL-5)",
+                "score": 43,
+                "maxScore": 80,
+                "severity": "Moderate",
+                "trend": "→",
+                "priority": "High"
+              },
+              {
+                "domain": "Depression Inventory (PHQ-9)",
+                "score": 11,
+                "maxScore": 27,
+                "severity": "Moderate",
+                "trend": "→",
+                "priority": "Medium"
+              },
+              {
+                "domain": "Anxiety Disorder Scale (GAD-7)",
+                "score": 15,
+                "maxScore": 21,
+                "severity": "Severe",
+                "trend": "↑",
+                "priority": "High"
+              },
+              {
+                "domain": "Functional Assessment (WHO-DAS)",
+                "score": 18,
+                "maxScore": 48,
+                "severity": "Moderate Impairment",
+                "trend": "↓",
+                "priority": "Medium"
+              },
+              {
+                "domain": "Emotion Regulation (DERS)",
+                "score": 72,
+                "maxScore": 180,
+                "severity": "Mild Difficulty",
+                "trend": "↓",
+                "priority": "Low"
+              }
+            ]
+
+            chartData = [
+              { "name": "PTSD", "value": 43 },
+              { "name": "Depression", "value": 11 },
+              { "name": "Anxiety", "value": 15 },
+              { "name": "Function", "value": 18 },
+              { "name": "Emotion Reg", "value": 72 }
+            ]
+          }
+
+          let response = `🏥 **COMPREHENSIVE CLINICAL ASSESSMENT**
+
+**Patient ID:** ${patient_id}
+**Assessment Date:** ${new Date().toISOString().split("T")[0]}
+**Data Source:** ${isRealData ? 'REAL CLINICAL DATA' : 'DEMONSTRATION DATA'}
+**Total Assessments Reviewed:** ${isRealData ? timelineData.length : '5'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚨 **RISK STRATIFICATION**
+
+**Overall Risk Level:** ${riskLevel}
+**Composite Risk Score:** ${riskScore}/100
+
+[ASSESSMENT_TABLE]${JSON.stringify(tableData)}[/ASSESSMENT_TABLE]`
+
+          if (include_chart) {
+            response += `
+
+[CHART_DATA]${JSON.stringify(chartData)}[/CHART_DATA]`
+          }
+
+          // Add historical data and trends for real data
+          if (isRealData && timelineData.length > 0) {
+            response += `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 **HISTORICAL ASSESSMENT TIMELINE**
+
+[TIMELINE_DATA]${JSON.stringify(timelineData)}[/TIMELINE_DATA]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 **TREND ANALYSIS**
+
+**PTSD (PCL-5):**
+   • Trend: ${trendData.ptsd?.direction || 'Unknown'} ${trendData.ptsd?.trend || '→'}
+   • Change: ${trendData.ptsd?.change || 0} points (${trendData.ptsd?.percentChange || 0}%)
+   • Assessments: ${trendData.ptsd?.assessmentCount || 0}
+   • Date Range: ${trendData.ptsd?.dateRange || 'No data'}
+
+**Depression (PHQ-9):**
+   • Trend: ${trendData.phq?.direction || 'Unknown'} ${trendData.phq?.trend || '→'}
+   • Change: ${trendData.phq?.change || 0} points (${trendData.phq?.percentChange || 0}%)
+   • Assessments: ${trendData.phq?.assessmentCount || 0}
+   • Date Range: ${trendData.phq?.dateRange || 'No data'}
+
+**Anxiety (GAD-7):**
+   • Trend: ${trendData.gad?.direction || 'Unknown'} ${trendData.gad?.trend || '→'}
+   • Change: ${trendData.gad?.change || 0} points (${trendData.gad?.percentChange || 0}%)
+   • Assessments: ${trendData.gad?.assessmentCount || 0}
+   • Date Range: ${trendData.gad?.dateRange || 'No data'}
+
+**Function (WHO-DAS):**
+   • Trend: ${trendData.who?.direction || 'Unknown'} ${trendData.who?.trend || '→'}
+   • Change: ${trendData.who?.change || 0} points (${trendData.who?.percentChange || 0}%)
+   • Assessments: ${trendData.who?.assessmentCount || 0}
+   • Date Range: ${trendData.who?.dateRange || 'No data'}
+
+**Emotion Regulation (DERS):**
+   • Trend: ${trendData.ders?.direction || 'Unknown'} ${trendData.ders?.trend || '→'}
+   • Change: ${trendData.ders?.change || 0} points (${trendData.ders?.percentChange || 0}%)
+   • Assessments: ${trendData.ders?.assessmentCount || 0}
+   • Date Range: ${trendData.ders?.dateRange || 'No data'}
+
+[TREND_DATA]${JSON.stringify(trendData)}[/TREND_DATA]`
+          }
+
+          response += `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 **CLINICAL PRIORITIES**
+
+🔴 **HIGH PRIORITY (Immediate Attention):**`
+
+          // Generate recommendations based on actual scores
+          const highPriorityItems = tableData.filter(item => item.priority === "High")
+          highPriorityItems.forEach(item => {
+            response += `\n   • ${item.severity} ${item.domain.split('(')[0].trim()} symptoms requiring intervention (${item.score}/${item.maxScore})`
+          })
+
+          response += `
+
+🟡 **MEDIUM PRIORITY (Active Monitoring):**`
+
+          const mediumPriorityItems = tableData.filter(item => item.priority === "Medium")
+          mediumPriorityItems.forEach(item => {
+            response += `\n   • ${item.severity} ${item.domain.split('(')[0].trim()} requiring ongoing support (${item.score}/${item.maxScore})`
+          })
+
+          response += `
+
+🟢 **LOW PRIORITY (Maintenance):**`
+
+          const lowPriorityItems = tableData.filter(item => item.priority === "Low")
+          lowPriorityItems.forEach(item => {
+            response += `\n   • ${item.domain.split('(')[0].trim()} within manageable range (${item.score}/${item.maxScore})`
+          })
+
+          response += `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📅 **CLINICAL RECOMMENDATIONS:**
+   • **Immediate:** Priority interventions for high-severity assessments
+   • **Short-term:** Increase therapy frequency for elevated scores
+   • **Ongoing:** Regular monitoring of moderate-severity symptoms  
+   • **Follow-up:** Complete reassessment in 4 weeks
+   • **Referral:** Consider specialist consultation as indicated
+
+**📋 Note:** This report ${isRealData ? 'displays actual patient data from the clinical database' : 'demonstrates visualization capabilities using sample data'}. All assessment data is dynamically rendered with professional formatting suitable for clinical documentation and patient care planning.`
+
+          return {
+            content: response,
+            clinical_report: true,
+            patient_id: patient_id,
+            assessment_date: new Date().toISOString().split("T")[0],
+            table_data: tableData,
+            chart_data: include_chart ? chartData : null,
+            timeline_data: isRealData ? timelineData : null,
+            trend_data: isRealData ? trendData : null,
+            historical_data: isRealData ? historicalData : null,
+            total_assessments: isRealData ? timelineData.length : 5,
+            report_type: "comprehensive_clinical_assessment",
+            is_real_data: isRealData
+          }
         },
       }),
     },

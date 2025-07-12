@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts"
 import { Users, Activity, TrendingUp, AlertTriangle, Heart, Shield, Brain, Target, Calendar, CheckCircle, Zap } from "lucide-react"
 import { OpenAIChat } from "@/components/openai-chat"
+import { CacheDebugPanel } from "@/components/cache-debug-panel"
 import { useState, useCallback, useEffect } from "react"
 
 export function WelcomePage() {
@@ -279,12 +280,8 @@ export function WelcomePage() {
           </Card>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Left Column - Charts */}
-          <div className="xl:col-span-2 space-y-6">
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Charts Row - 3 columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {/* Program Distribution */}
               <Card className="bg-gray-800 border-gray-700 hover:shadow-2xl transition-all duration-300">
                 <CardHeader>
@@ -512,70 +509,86 @@ export function WelcomePage() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
 
-            {/* Patient Motivations Wordcloud */}
-            <Card className="bg-gray-800 border-gray-700 hover:shadow-2xl transition-all duration-300">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <Heart className="h-5 w-5 text-pink-400" />
-                      Motivation Themes
-                    </CardTitle>
-                    <CardDescription className="text-gray-400">
-                      Key motivational factors identified in patient assessments
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 rounded-lg">
-                    <div className={`w-2 h-2 rounded-full ${
-                      motivationDataSource.includes('OPENAI_ANALYSIS') ? 'bg-purple-500' :
-                      motivationDataSource.includes('MCP_SERVER') ? 'bg-emerald-500' :
-                      motivationDataSource.includes('DIRECT_DATABASE') ? 'bg-blue-500' :
-                      motivationDataSource.includes('FALLBACK') ? 'bg-amber-500' :
-                      motivationDataSource.includes('ERROR') ? 'bg-red-500' :
-                      'bg-blue-500 animate-pulse'
-                    }`}></div>
-                    <span className="text-xs text-gray-400 font-medium">
-                      {motivationDataSource === 'LOADING' ? 'Loading...' : 
-                       motivationDataSource.includes('OPENAI_ANALYSIS') ? '🧠 OpenAI Analysis' :
-                       motivationDataSource.includes('MCP_SERVER') ? 'MCP Server' :
-                       motivationDataSource.includes('DIRECT_DATABASE') ? 'Real Data' :
-                       motivationDataSource.includes('FALLBACK') ? 'Fallback Data' :
-                       motivationDataSource.includes('ERROR') ? 'Demo Data' :
-                       motivationDataSource}
-                    </span>
-                  </div>
+          {/* Patient Motivations Wordcloud */}
+          <Card className="bg-gray-800 border-gray-700 hover:shadow-2xl transition-all duration-300">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <Heart className="h-5 w-5 text-pink-400" />
+                    Motivation Themes
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Key motivational factors identified in patient assessments
+                  </CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap items-center justify-center gap-6 py-12 px-4 bg-gradient-to-br from-gray-900/30 to-gray-800/30 rounded-xl">
-                  {motivationWords.map((word, index) => (
-                    <span
-                      key={index}
-                      className="font-bold transition-all duration-200 hover:scale-110 cursor-pointer select-none"
-                      style={{
-                        fontSize: `${word.size}px`,
-                        color: word.color,
-                        textShadow: "0 2px 4px rgba(0,0,0,0.3)",
-                        filter: `drop-shadow(0 0 8px ${word.color}40)`
-                      }}
-                    >
-                      {word.text}
-                    </span>
-                  ))}
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 rounded-lg">
+                  <div className={`w-2 h-2 rounded-full ${
+                    motivationDataSource.includes('OPENAI_ANALYSIS') ? 'bg-purple-500' :
+                    motivationDataSource.includes('MCP_SERVER') ? 'bg-emerald-500' :
+                    motivationDataSource.includes('DIRECT_DATABASE') ? 'bg-blue-500' :
+                    motivationDataSource.includes('FALLBACK') ? 'bg-amber-500' :
+                    motivationDataSource.includes('ERROR') ? 'bg-red-500' :
+                    'bg-blue-500 animate-pulse'
+                  }`}></div>
+                  <span className="text-xs text-gray-400 font-medium">
+                    {motivationDataSource === 'LOADING' ? 'Loading...' : 
+                     motivationDataSource.includes('OPENAI_ANALYSIS') ? '🧠 OpenAI Analysis' :
+                     motivationDataSource.includes('MCP_SERVER') ? 'MCP Server' :
+                     motivationDataSource.includes('DIRECT_DATABASE') ? 'Real Data' :
+                     motivationDataSource.includes('FALLBACK') ? 'Fallback Data' :
+                     motivationDataSource.includes('ERROR') ? 'Demo Data' :
+                     motivationDataSource}
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column - AI Analysis Chat */}
-          <div className="xl:col-span-1 flex flex-col">
-            <div className="bg-gray-800 border-gray-700 rounded-xl shadow-2xl h-full">
-              <OpenAIChat />
-            </div>
-          </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap items-center justify-center gap-4 py-8 px-4 bg-gradient-to-br from-gray-900/30 to-gray-800/30 rounded-xl">
+                {motivationWords.map((word, index) => (
+                  <span
+                    key={index}
+                    className="font-bold transition-all duration-200 hover:scale-110 cursor-pointer select-none"
+                    style={{
+                      fontSize: `${Math.max(12, Math.min(word.size, 20))}px`,
+                      color: word.color,
+                      textShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                      filter: `drop-shadow(0 0 8px ${word.color}40)`
+                    }}
+                  >
+                    {word.text}
+                  </span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* AI Chat Section - Separate full-width section */}
+        <div className="mt-8">
+          <Card className="bg-gray-800 border-gray-700 shadow-2xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Brain className="h-5 w-5 text-blue-400" />
+                AI Healthcare Analytics Assistant
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Interact with AI for clinical insights, patient analysis, and data visualization
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <OpenAIChat />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Debug Panel - Development only */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-6">
+            <CacheDebugPanel />
+          </div>
+        )}
       </div>
     </div>
   )

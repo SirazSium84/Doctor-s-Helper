@@ -32,17 +32,12 @@ export function OpenAIChat() {
   // Auto-scroll to bottom within chat container when new messages arrive
   useEffect(() => {
     if (chatContainerRef.current) {
-      // Small delay to ensure content is fully rendered before scrolling
-      setTimeout(() => {
-        if (chatContainerRef.current) {
-          chatContainerRef.current.scrollTo({
-            top: chatContainerRef.current.scrollHeight,
-            behavior: 'smooth'
-          })
-        }
-      }, 100)
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
     }
-  }, [messages, isLoading])
+  }, [messages])
 
   // Debug: Track message changes
   useEffect(() => {
@@ -53,7 +48,7 @@ export function OpenAIChat() {
   }, [messages, isLoading, error])
 
   return (
-    <Card className="bg-gray-800 border-gray-700 w-full h-fit">
+    <Card className="bg-gray-800 border-gray-700 w-full">
       <CardHeader className="pb-4">
         <CardTitle className="text-white flex items-center gap-2">
           <Brain className="w-5 h-5 text-blue-400" />
@@ -65,7 +60,7 @@ export function OpenAIChat() {
           {/* Messages */}
           <div 
             ref={chatContainerRef}
-            className="min-h-[400px] max-h-[80vh] overflow-y-auto space-y-4 p-6 transition-all duration-500 ease-in-out border border-gray-700 rounded-lg bg-gray-900/50 scroll-smooth"
+            className="h-[650px] overflow-y-auto space-y-4 p-6 transition-all duration-300 ease-in-out border border-gray-700 rounded-lg bg-gray-900/50 scroll-smooth"
           >
             {messages.length === 0 && (
               <div className="flex items-start gap-3">
@@ -75,8 +70,8 @@ export function OpenAIChat() {
                 <div className="p-4 rounded-xl bg-gray-700 text-gray-100 border border-gray-600 shadow-lg">
                   <div className="text-sm leading-relaxed">
                     <strong className="text-blue-400 font-semibold">AI Healthcare Analytics Assistant</strong><br/>
-                    I can generate clinical reports, patient assessments, and interactive visualizations.<br/>
-                    Try asking: <em className="text-gray-300">"Show me a sample clinical report"</em> or <em className="text-gray-300">"Create patient assessment summary"</em>
+                    I can analyze patient risk profiles, identify high-risk patients, and provide clinical insights.<br/>
+                    Try asking: <em className="text-gray-300">"Analyze the risk profile for patient 0156b2ff0c18"</em>
                   </div>
                 </div>
               </div>
@@ -113,8 +108,33 @@ export function OpenAIChat() {
                         : 'bg-gray-700 text-gray-100 border border-gray-600'
                     }`}
                   >
-                    {/* Enhanced message rendering with table and chart support */}
-                    <EnhancedChatRenderer content={message.content || ''} role={message.role as "user" | "assistant"} />
+                    <div className="prose prose-sm prose-invert max-w-none">
+                      {message.content ? (
+                        <div className="leading-relaxed">
+                          {message.content.split('\n').map((line, i) => (
+                            <p key={i} className="mb-2 last:mb-0 text-sm">
+                              {line.includes('**') ? (
+                                line.split('**').map((part, j) => 
+                                  j % 2 === 1 ? <strong key={j} className="text-blue-400 font-semibold">{part}</strong> : part
+                                )
+                              ) : line}
+                            </p>
+                          ))}
+                        </div>
+                      ) : message.role === 'user' ? (
+                        <p className="text-sm font-medium">{message.content}</p>
+                      ) : (
+                        <div className="text-gray-400 text-xs">
+                          [Empty response - check browser console for details]
+                          <br/>
+                          Message ID: {message.id}
+                          <br/>
+                          Role: {message.role}
+                          <br/>
+                          Content length: {message.content?.length || 0}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -163,7 +183,7 @@ export function OpenAIChat() {
               name="message"
               value={input}
               onChange={handleInputChange}
-              placeholder="Ask for comprehensive reports, patient assessments, or clinical insights with charts..."
+              placeholder="Ask about patient risk analysis, clinical insights, or treatment recommendations..."
               className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 h-12 text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               disabled={isLoading}
               autoComplete="off"
@@ -192,10 +212,10 @@ export function OpenAIChat() {
             <p className="text-xs text-gray-400 mb-3 font-medium">Quick Clinical Queries:</p>
             <div className="grid grid-cols-2 gap-2">
               {[
-                "Show available patients",
-                "Comprehensive analytical report for patient 01cb6dae438c", 
-                "Historical trends for patient AHCM001",
-                "Show me a sample clinical report"
+                "Analyze high-risk patients",
+                "Show patient risk profiles", 
+                "Identify substance use patterns",
+                "Clinical recommendations needed"
               ].map((suggestion, index) => (
                 <button
                   key={index}
