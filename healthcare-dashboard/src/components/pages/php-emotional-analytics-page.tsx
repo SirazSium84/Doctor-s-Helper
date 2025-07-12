@@ -359,7 +359,7 @@ export function PHPEmotionalAnalyticsPage() {
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false)
   const [hoveredSlice, setHoveredSlice] = useState<string | null>(null)
   
-  const { selectedPatient, phpDailyAssessments } = useDashboardStore()
+  const { selectedPatient, phpDailyAssessments, viewMode, setViewMode } = useDashboardStore()
 
   // Hover handlers for pie chart
   const handleSliceHover = useCallback((data: any, index: number) => {
@@ -735,19 +735,33 @@ export function PHPEmotionalAnalyticsPage() {
           
           {/* Professional Controls Panel */}
           <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 shadow-lg min-w-[400px]">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-1.5 bg-gray-700 rounded-md">
-                <Calendar className="h-4 w-4 text-gray-300" />
-              </div>
-              <h3 className="font-semibold text-white">Analysis Controls</h3>
-            </div>
-            
             <div className="space-y-4">
-              {/* Patient Selector */}
+              {/* View Mode */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Patient Scope</label>
-                <PatientSelector />
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setViewMode('all')}
+                    className={`btn ${viewMode === 'all' ? 'btn-primary' : 'btn-ghost'} flex items-center justify-center gap-2`}
+                  >
+                    <Users className="w-4 h-4" />
+                    All Patients
+                  </button>
+                  <button
+                    onClick={() => setViewMode('individual')}
+                    className={`btn ${viewMode === 'individual' ? 'btn-primary' : 'btn-ghost'} flex items-center justify-center gap-2`}
+                  >
+                    <Users className="w-4 h-4" />
+                    Individual Patient
+                  </button>
+                </div>
               </div>
+              
+                             {/* Patient Selector - Show when Individual Patient is selected */}
+               {viewMode === 'individual' && (
+                 <div>
+                   <PatientSelector showViewMode={false} forceShowPatientSelector={true} minimal={true} />
+                 </div>
+               )}
               
               {/* Time Range Controls */}
               <div>

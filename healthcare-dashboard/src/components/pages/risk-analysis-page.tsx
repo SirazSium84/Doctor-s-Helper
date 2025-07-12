@@ -3,13 +3,14 @@
 import { useDashboardStore } from "@/store/dashboard-store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PatientSelector } from "@/components/patient-selector"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts"
 import { useState, useMemo } from "react"
-import { TrendingDown, TrendingUp, AlertTriangle, CheckCircle } from "lucide-react"
+import { TrendingDown, TrendingUp, AlertTriangle, CheckCircle, Users, Database } from "lucide-react"
 import type { AssessmentType } from "@/types/assessments"
 
 export function RiskAnalysisPage() {
-  const { patients, assessmentScores, selectedPatient, viewMode } = useDashboardStore()
+  const { patients, assessmentScores, selectedPatient, viewMode, setViewMode } = useDashboardStore()
   const [selectedAssessment, setSelectedAssessment] = useState<AssessmentType>("phq")
 
   // Assessment thresholds for reference lines
@@ -113,65 +114,129 @@ export function RiskAnalysisPage() {
   const currentThresholds = thresholds[selectedAssessment]
 
   return (
-    <div className="space-y-6">
-      {/* Controls */}
-      <Card className="bg-gray-800 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-white">Risk Analysis Controls</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Assessment Type</label>
-              <Select
-                value={selectedAssessment}
-                onValueChange={(value) => setSelectedAssessment(value as AssessmentType)}
-              >
-                <SelectTrigger className="w-48 bg-gray-700 border-gray-600 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-700 border-gray-600">
-                  <SelectItem value="phq" className="text-white hover:bg-gray-600">
-                    PHQ-9 Depression
-                  </SelectItem>
-                  <SelectItem value="gad" className="text-white hover:bg-gray-600">
-                    GAD-7 Anxiety
-                  </SelectItem>
-                  <SelectItem value="who" className="text-white hover:bg-gray-600">
-                    WHO Disability
-                  </SelectItem>
-                  <SelectItem value="pcl" className="text-white hover:bg-gray-600">
-                    PCL-5 PTSD
-                  </SelectItem>
-                  <SelectItem value="ders" className="text-white hover:bg-gray-600">
-                    DERS Emotion Regulation
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {improvementMetrics && (
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  {improvementMetrics.isImproving ? (
-                    <TrendingDown className="w-5 h-5 text-green-400" />
-                  ) : (
-                    <TrendingUp className="w-5 h-5 text-red-400" />
-                  )}
-                  <span className="text-sm text-gray-300">
-                    {improvementMetrics.isImproving ? "Improving" : "Worsening"}
-                  </span>
+    <div className="space-y-8 animate-in fade-in-0 duration-700" style={{ willChange: 'opacity' }}>
+      {/* Header Card */}
+      <Card className="bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 border border-gray-700/50 shadow-2xl">
+        <CardHeader className="pb-6">
+          {/* Top Section: Title and Controls */}
+          <div className="flex items-start justify-between gap-8 mb-6">
+            <div className="flex-1">
+              <CardTitle className="text-white text-3xl font-bold flex items-center gap-3 mb-3">
+                <div className="p-2 bg-blue-600/20 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-blue-400" />
                 </div>
-                <div className="text-sm text-gray-300">
-                  <span className={improvementMetrics.isImproving ? "text-green-400" : "text-red-400"}>
-                    {improvementMetrics.improvement.toFixed(1)}%
-                  </span>{" "}
-                  change
+                <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+                  Risk Stratification Analysis
+                </span>
+              </CardTitle>
+              
+              <p className="text-gray-300 text-base leading-relaxed max-w-2xl mb-4">
+                {viewMode === "individual" && selectedPatient
+                  ? `Longitudinal risk assessment tracking for ${getPatientName(selectedPatient)}`
+                  : "Individual patient risk analysis requires patient selection"
+                }
+              </p>
+              
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-700/50 rounded-lg inline-flex">
+                <Database className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-400 font-medium">
+                  {assessmentScores.length} assessment records available
+                </span>
+              </div>
+            </div>
+            
+            {/* Professional Controls Panel */}
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 shadow-lg min-w-[400px]">
+              <div className="space-y-4">
+                {/* View Mode */}
+                <div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setViewMode('all')}
+                      className={`btn ${viewMode === 'all' ? 'btn-primary' : 'btn-ghost'} flex items-center justify-center gap-2`}
+                    >
+                      <Users className="w-4 h-4" />
+                      All Patients
+                    </button>
+                    <button
+                      onClick={() => setViewMode('individual')}
+                      className={`btn ${viewMode === 'individual' ? 'btn-primary' : 'btn-ghost'} flex items-center justify-center gap-2`}
+                    >
+                      <Users className="w-4 h-4" />
+                      Individual Patient
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Patient Selector - Show when Individual Patient is selected */}
+                {viewMode === 'individual' && (
+                  <div>
+                    <PatientSelector showViewMode={false} forceShowPatientSelector={true} minimal={true} />
+                  </div>
+                )}
+                
+                {/* Assessment Type Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Assessment Type</label>
+                  <Select
+                    value={selectedAssessment}
+                    onValueChange={(value) => setSelectedAssessment(value as AssessmentType)}
+                  >
+                    <SelectTrigger className="btn btn-ghost justify-between h-auto py-3 px-4 border-gray-600 hover:bg-gray-600 text-white w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-700 border-gray-600">
+                      <SelectItem value="phq" className="text-white hover:bg-gray-600">
+                        PHQ-9 Depression
+                      </SelectItem>
+                      <SelectItem value="gad" className="text-white hover:bg-gray-600">
+                        GAD-7 Anxiety
+                      </SelectItem>
+                      <SelectItem value="who" className="text-white hover:bg-gray-600">
+                        WHO Disability
+                      </SelectItem>
+                      <SelectItem value="pcl" className="text-white hover:bg-gray-600">
+                        PCL-5 PTSD
+                      </SelectItem>
+                      <SelectItem value="ders" className="text-white hover:bg-gray-600">
+                        DERS Emotion Regulation
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            )}
+            </div>
           </div>
-        </CardContent>
+          
+          {/* Bottom Section: Key Metrics */}
+          <div className="grid grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-gradient-to-br from-blue-900/50 to-blue-800/30 rounded-xl border border-blue-700/30">
+              <div className="text-3xl font-bold text-blue-400 mb-1">
+                {chartData.length}
+              </div>
+              <div className="text-sm text-blue-300 font-medium">Assessment Points</div>
+              <div className="text-xs text-gray-400 mt-1">Longitudinal tracking</div>
+            </div>
+            
+            <div className="text-center p-4 bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 rounded-xl border border-emerald-700/30">
+              <div className="text-3xl font-bold text-emerald-400 mb-1">
+                {improvementMetrics ? (improvementMetrics.isImproving ? "↓" : "↑") : "—"}
+              </div>
+              <div className="text-sm text-emerald-300 font-medium">Trend Direction</div>
+              <div className="text-xs text-gray-400 mt-1">
+                {improvementMetrics ? (improvementMetrics.isImproving ? "Improving" : "Worsening") : "No data"}
+              </div>
+            </div>
+            
+            <div className="text-center p-4 bg-gradient-to-br from-violet-900/50 to-violet-800/30 rounded-xl border border-violet-700/30">
+              <div className="text-3xl font-bold text-violet-400 mb-1">
+                {improvementMetrics ? `${improvementMetrics.improvement.toFixed(1)}%` : "—"}
+              </div>
+              <div className="text-sm text-violet-300 font-medium">Change Rate</div>
+              <div className="text-xs text-gray-400 mt-1">From first to last</div>
+            </div>
+          </div>
+        </CardHeader>
       </Card>
 
       {/* Main Chart */}

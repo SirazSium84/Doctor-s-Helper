@@ -3,12 +3,13 @@
 import { useDashboardStore } from "@/store/dashboard-store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { PatientSelector } from "@/components/patient-selector"
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend, Tooltip } from "recharts"
 import { useMemo, useEffect } from "react"
-import { TrendingUp, TrendingDown, AlertTriangle, Info } from "lucide-react"
+import { TrendingUp, TrendingDown, AlertTriangle, Info, Users, Database } from "lucide-react"
 
 export function SpiderChartPage() {
-  const { patients, assessmentScores, selectedPatient, viewMode } = useDashboardStore()
+  const { patients, assessmentScores, selectedPatient, viewMode, setViewMode } = useDashboardStore()
 
   // Assessment configurations with enhanced metadata
   const assessmentConfig = {
@@ -195,7 +196,95 @@ export function SpiderChartPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in-0 duration-700" style={{ willChange: 'opacity' }}>
+      {/* Header Card */}
+      <Card className="bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 border border-gray-700/50 shadow-2xl">
+        <CardHeader className="pb-6">
+          {/* Top Section: Title and Controls */}
+          <div className="flex items-start justify-between gap-8 mb-6">
+            <div className="flex-1">
+              <CardTitle className="text-white text-3xl font-bold flex items-center gap-3 mb-3">
+                <div className="p-2 bg-blue-600/20 rounded-lg">
+                  <AlertTriangle className="w-6 h-6 text-blue-400" />
+                </div>
+                <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+                  Multi-Domain Assessment Analysis
+                </span>
+              </CardTitle>
+              
+              <p className="text-gray-300 text-base leading-relaxed max-w-2xl mb-4">
+                {viewMode === "individual" && selectedPatient
+                  ? `Comprehensive assessment profile for ${getPatientName(selectedPatient)}`
+                  : `Population-wide assessment averages across ${patients.length} ${patients.length === 1 ? 'patient' : 'patients'}`
+                }
+              </p>
+              
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-700/50 rounded-lg inline-flex">
+                <Database className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-400 font-medium">
+                  {assessmentScores.length} assessment records available
+                </span>
+              </div>
+            </div>
+            
+            {/* Professional Controls Panel */}
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 shadow-lg min-w-[400px]">
+              <div className="space-y-6">
+                {/* View Mode */}
+                <div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setViewMode('all')}
+                      className={`btn ${viewMode === 'all' ? 'btn-primary' : 'btn-ghost'} flex items-center justify-center gap-2`}
+                    >
+                      <Users className="w-4 h-4" />
+                      All Patients
+                    </button>
+                    <button
+                      onClick={() => setViewMode('individual')}
+                      className={`btn ${viewMode === 'individual' ? 'btn-primary' : 'btn-ghost'} flex items-center justify-center gap-2`}
+                    >
+                      <Users className="w-4 h-4" />
+                      Individual Patient
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Patient Selector - Show when Individual Patient is selected */}
+                {viewMode === 'individual' && (
+                  <div>
+                    <PatientSelector showViewMode={false} forceShowPatientSelector={true} minimal={true} />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Bottom Section: Key Metrics */}
+          <div className="grid grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-gradient-to-br from-blue-900/50 to-blue-800/30 rounded-xl border border-blue-700/30">
+              <div className="text-3xl font-bold text-blue-400 mb-1">
+                {chartData.length}
+              </div>
+              <div className="text-sm text-blue-300 font-medium">Assessment Types</div>
+              <div className="text-xs text-gray-400 mt-1">Multi-domain coverage</div>
+            </div>
+            
+            <div className="text-center p-4 bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 rounded-xl border border-emerald-700/30">
+              <div className="text-3xl font-bold text-emerald-400 mb-1">{averageScore}%</div>
+              <div className="text-sm text-emerald-300 font-medium">Overall Score</div>
+              <div className="text-xs text-gray-400 mt-1">Normalized average</div>
+            </div>
+            
+            <div className="text-center p-4 bg-gradient-to-br from-violet-900/50 to-violet-800/30 rounded-xl border border-violet-700/30">
+              <div className="text-3xl font-bold text-violet-400 mb-1">{criticalScores}</div>
+              <div className="text-sm text-violet-300 font-medium">High Risk Areas</div>
+              <div className="text-xs text-gray-400 mt-1">Moderate/Severe scores</div>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
       {/* Main Chart Card */}
       <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700/50 shadow-2xl">
         <CardHeader className="pb-4">

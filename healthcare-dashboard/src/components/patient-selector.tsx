@@ -8,18 +8,20 @@ import { Label } from "@/components/ui/label"
 interface PatientSelectorProps {
   showViewMode?: boolean
   currentTab?: string
+  forceShowPatientSelector?: boolean
+  minimal?: boolean
 }
 
-export function PatientSelector({ showViewMode = true, currentTab }: PatientSelectorProps) {
+export function PatientSelector({ showViewMode = true, currentTab, forceShowPatientSelector = false, minimal = false }: PatientSelectorProps) {
   const { patients, selectedPatient, viewMode, setSelectedPatient, setViewMode } = useDashboardStore()
 
   // For risk analysis, always show individual mode and patient selector
   const isRiskAnalysis = currentTab === "risk"
   const shouldShowViewMode = showViewMode && !isRiskAnalysis
-  const shouldShowPatientSelector = isRiskAnalysis || (showViewMode && viewMode === "individual")
+  const shouldShowPatientSelector = isRiskAnalysis || (showViewMode && viewMode === "individual") || (forceShowPatientSelector && viewMode === "individual")
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg space-y-4">
+    <div className={minimal ? "space-y-2" : "bg-gray-800 p-4 rounded-lg space-y-4"}>
       {shouldShowViewMode && (
         <div className="space-y-3">
           <Label className="text-sm font-medium text-gray-300">View Mode</Label>
@@ -50,7 +52,7 @@ export function PatientSelector({ showViewMode = true, currentTab }: PatientSele
             {isRiskAnalysis ? "Select Patient for Risk Analysis" : "Select Patient"}
           </Label>
           <Select value={selectedPatient || ""} onValueChange={setSelectedPatient}>
-            <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+            <SelectTrigger className="btn btn-ghost justify-between h-auto py-3 px-4 border-gray-600 hover:bg-gray-600 text-white">
               <SelectValue placeholder={isRiskAnalysis ? "Choose a patient to analyze..." : "Choose a patient..."} />
             </SelectTrigger>
             <SelectContent className="bg-gray-700 border-gray-600">

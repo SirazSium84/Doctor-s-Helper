@@ -9,7 +9,7 @@ import { useMemo, useState, useCallback } from "react"
 import { ArrowLeft, Users, TrendingUp, AlertTriangle, Info, ChevronRight, Database, BarChart3 } from "lucide-react"
 
 export function BiopsychosocialPage() {
-  const { patients, substanceHistory, selectedPatient, viewMode } = useDashboardStore()
+  const { patients, substanceHistory, selectedPatient, viewMode, setViewMode } = useDashboardStore()
   const [selectedSubstance, setSelectedSubstance] = useState<string | null>(null)
   const [drillDownData, setDrillDownData] = useState<any[]>([])
   const [hoveredSlice, setHoveredSlice] = useState<string | null>(null)
@@ -318,42 +318,21 @@ export function BiopsychosocialPage() {
             
             {/* Professional Controls Panel */}
             <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 shadow-lg min-w-[400px]">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-1.5 bg-gray-700 rounded-md">
-                  <Users className="h-4 w-4 text-gray-300" />
-                </div>
-                <h3 className="font-semibold text-white">Analysis Controls</h3>
-              </div>
-              
               <div className="space-y-6">
-                {/* Patient Scope */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Patient Scope</label>
-                  <PatientSelector />
-                </div>
-                
+
                 {/* View Mode */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-3">View Mode</label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={() => {/* TODO: Implement view mode toggle */}}
-                      className={`px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
-                        viewMode === 'aggregate'
-                          ? 'bg-blue-600 text-white shadow-md transform scale-[0.98]'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
-                      }`}
+                      onClick={() => setViewMode('all')}
+                      className={`btn ${viewMode === 'all' ? 'btn-primary' : 'btn-ghost'} flex items-center justify-center gap-2`}
                     >
                       <Users className="w-4 h-4" />
                       All Patients
                     </button>
                     <button
-                      onClick={() => {/* TODO: Implement view mode toggle */}}
-                      className={`px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
-                        viewMode === 'individual'
-                          ? 'bg-blue-600 text-white shadow-md transform scale-[0.98]'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
-                      }`}
+                      onClick={() => setViewMode('individual')}
+                      className={`btn ${viewMode === 'individual' ? 'btn-primary' : 'btn-ghost'} flex items-center justify-center gap-2`}
                     >
                       <Users className="w-4 h-4" />
                       Individual Patient
@@ -361,51 +340,14 @@ export function BiopsychosocialPage() {
                   </div>
                 </div>
                 
-                {/* Time Period */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-3">Time Period</label>
-                  <div className="grid grid-cols-3 gap-2 mb-3">
-                    {(['7D', '30D', '90D'] as const).map((period) => (
-                      <button
-                        key={period}
-                        onClick={() => {/* TODO: Implement time period filter */}}
-                        className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                          false // TODO: Add selected state logic
-                            ? 'bg-blue-600 text-white shadow-md transform scale-[0.98]'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
-                        }`}
-                      >
-                        {period}
-                      </button>
-                    ))}
+                {/* Patient Selector - Show when Individual Patient is selected */}
+                {viewMode === 'individual' && (
+                  <div>
+                    <PatientSelector showViewMode={false} forceShowPatientSelector={true} minimal={true} />
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => {/* TODO: Implement all time filter */}}
-                      className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                        true // TODO: Add selected state logic for "All Time"
-                          ? 'bg-blue-600 text-white shadow-md'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
-                      }`}
-                    >
-                      All Time
-                    </button>
-                    <button
-                      onClick={() => {/* TODO: Implement custom date picker */}}
-                      className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
-                        false // TODO: Add selected state logic for "Custom"
-                          ? 'bg-violet-600 text-white shadow-md'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
-                      }`}
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-                      </svg>
-                      Custom
-                    </button>
-                  </div>
-                </div>
+                )}
+                
+
               </div>
             </div>
           </div>
