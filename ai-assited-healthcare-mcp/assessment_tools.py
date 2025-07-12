@@ -436,122 +436,188 @@ def create_assessment_tools(mcp: FastMCP):
             return {"error": f"Failed to retrieve DERS scores: {str(e)}"}
 
     @mcp.tool
-    def get_all_patient_assessments(patient_id: str) -> Dict[str, Any]:
+    def get_all_patient_assessments(
+        patient_id: str,
+        assessment_types: Optional[List[str]] = None,
+        date_range: Optional[Dict[str, str]] = None,
+        limit: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """
-        Get comprehensive overview of all assessments for a patient with calculated scores
+        Get comprehensive overview of all assessments for a patient with flexible filtering
 
         Args:
             patient_id: Patient group identifier
+            assessment_types: Optional list of assessment types to fetch ['ptsd', 'phq', 'gad', 'who', 'ders']
+            date_range: Optional date range filter {'start': 'YYYY-MM-DD', 'end': 'YYYY-MM-DD'}
+            limit: Optional limit on number of assessments per type
 
         Returns:
-            Complete assessment overview across all instruments with calculated totals
+            Complete assessment overview across specified instruments with calculated totals
         """
         try:
+            # Default to all assessment types if not specified
+            if assessment_types is None:
+                assessment_types = ["ptsd", "phq", "gad", "who", "ders"]
+
+            # Validate assessment types
+            valid_types = ["ptsd", "phq", "gad", "who", "ders"]
+            assessment_types = [
+                t.lower() for t in assessment_types if t.lower() in valid_types
+            ]
+
+            if not assessment_types:
+                return {"error": "No valid assessment types specified"}
+
             assessments = {}
 
-            # Get data from each assessment type with calculated totals
-            assessments = {}
+            # Get data from each requested assessment type with calculated totals
+            for assessment_type in assessment_types:
+                if assessment_type == "ders":
+                    # Handle DERS separately (both versions)
+                    try:
+                        ders1_result = (
+                            supabase.table(HEALTHCARE_TABLES["ders"])
+                            .select("*")
+                            .eq("group_identifier", patient_id)
+                            .order("assessment_date", desc=True)
+                        )
+                        ders2_result = (
+                            supabase.table(HEALTHCARE_TABLES["ders2"])
+                            .select("*")
+                            .eq("group_identifier", patient_id)
+                            .order("assessment_date", desc=True)
+                        )
 
-            for assessment_type in ["ptsd", "phq", "gad", "who"]:
-                table_name = HEALTHCARE_TABLES[assessment_type]
-                try:
-                    result = (
-                        supabase.table(table_name)
-                        .select("*")
-                        .eq("group_identifier", patient_id)
-                        .order("assessment_date", desc=True)
-                        .execute()
-                    )
+                        # Apply date range filter if specified
+                        if date_range:
+                            if date_range.get("start"):
+                                ders1_result = ders1_result.gte(
+                                    "assessment_date", date_range["start"]
+                                )
+                                ders2_result = ders2_result.gte(
+                                    "assessment_date", date_range["start"]
+                                )
+                            if date_range.get("end"):
+                                ders1_result = ders1_result.lte(
+                                    "assessment_date", date_range["end"]
+                                )
+                                ders2_result = ders2_result.lte(
+                                    "assessment_date", date_range["end"]
+                                )
 
-                    if result.data:
-                        # Calculate totals for each assessment
-                        enriched_assessments = []
-                        for assessment in result.data:
-                            enriched = calculate_assessment_total(
-                                assessment, assessment_type
+                        # Apply limit if specified
+                        if limit:
+                            ders1_result = ders1_result.limit(limit)
+                            ders2_result = ders2_result.limit(limit)
+
+                        ders1_result = ders1_result.execute()
+                        ders2_result = ders2_result.execute()
+
+                        all_ders = []
+                        if ders1_result.data:
+                            for record in ders1_result.data:
+                                record["ders_version"] = "DERS-1"
+                                enriched = calculate_assessment_total(record, "ders")
+                                all_ders.append(enriched)
+
+                        if ders2_result.data:
+                            for record in ders2_result.data:
+                                record["ders_version"] = "DERS-2"
+                                enriched = calculate_assessment_total(record, "ders")
+                                all_ders.append(enriched)
+
+                        if all_ders:
+                            all_ders.sort(
+                                key=lambda x: x.get("assessment_date", ""), reverse=True
                             )
-                            enriched_assessments.append(enriched)
+                            # Apply limit to combined results if specified
+                            if limit:
+                                all_ders = all_ders[:limit]
 
-                        assessments[assessment_type] = {
-                            "assessment_type": f"{assessment_type.upper()}",
-                            "assessment_count": len(enriched_assessments),
-                            "assessments": enriched_assessments,
-                            "latest_score": (
-                                enriched_assessments[0]["calculated_total"]
-                                if enriched_assessments
-                                else None
-                            ),
-                            "latest_severity": (
-                                enriched_assessments[0].get("severity")
-                                or enriched_assessments[0].get("wellbeing_level")
-                                if enriched_assessments
-                                else None
-                            ),
+                            assessments["ders"] = {
+                                "assessment_type": "DERS (Emotion Regulation)",
+                                "assessment_count": len(all_ders),
+                                "assessments": all_ders,
+                                "latest_score": (
+                                    all_ders[0]["calculated_total"]
+                                    if all_ders
+                                    else None
+                                ),
+                                "latest_emotion_regulation_level": (
+                                    all_ders[0]["emotion_regulation_level"]
+                                    if all_ders
+                                    else None
+                                ),
+                            }
+                        else:
+                            assessments["ders"] = {
+                                "message": "No DERS assessments found"
+                            }
+
+                    except Exception as e:
+                        assessments["ders"] = {
+                            "error": f"Failed to retrieve DERS data: {str(e)}"
                         }
-                    else:
-                        assessments[assessment_type] = {
-                            "message": f"No {assessment_type} assessments found"
-                        }
-
-                except Exception as e:
-                    assessments[assessment_type] = {
-                        "error": f"Failed to retrieve {assessment_type} data: {str(e)}"
-                    }
-
-            # Handle DERS separately (both versions)
-            try:
-                ders1_result = (
-                    supabase.table(HEALTHCARE_TABLES["ders"])
-                    .select("*")
-                    .eq("group_identifier", patient_id)
-                    .order("assessment_date", desc=True)
-                    .execute()
-                )
-                ders2_result = (
-                    supabase.table(HEALTHCARE_TABLES["ders2"])
-                    .select("*")
-                    .eq("group_identifier", patient_id)
-                    .order("assessment_date", desc=True)
-                    .execute()
-                )
-
-                all_ders = []
-                if ders1_result.data:
-                    for record in ders1_result.data:
-                        record["ders_version"] = "DERS-1"
-                        enriched = calculate_assessment_total(record, "ders")
-                        all_ders.append(enriched)
-
-                if ders2_result.data:
-                    for record in ders2_result.data:
-                        record["ders_version"] = "DERS-2"
-                        enriched = calculate_assessment_total(record, "ders")
-                        all_ders.append(enriched)
-
-                if all_ders:
-                    all_ders.sort(
-                        key=lambda x: x.get("assessment_date", ""), reverse=True
-                    )
-                    assessments["ders"] = {
-                        "assessment_type": "DERS (Emotion Regulation)",
-                        "assessment_count": len(all_ders),
-                        "assessments": all_ders,
-                        "latest_score": (
-                            all_ders[0]["calculated_total"] if all_ders else None
-                        ),
-                        "latest_emotion_regulation_level": (
-                            all_ders[0]["emotion_regulation_level"]
-                            if all_ders
-                            else None
-                        ),
-                    }
                 else:
-                    assessments["ders"] = {"message": "No DERS assessments found"}
+                    # Handle standard assessment types
+                    table_name = HEALTHCARE_TABLES[assessment_type]
+                    try:
+                        query = (
+                            supabase.table(table_name)
+                            .select("*")
+                            .eq("group_identifier", patient_id)
+                            .order("assessment_date", desc=True)
+                        )
 
-            except Exception as e:
-                assessments["ders"] = {
-                    "error": f"Failed to retrieve DERS data: {str(e)}"
-                }
+                        # Apply date range filter if specified
+                        if date_range:
+                            if date_range.get("start"):
+                                query = query.gte(
+                                    "assessment_date", date_range["start"]
+                                )
+                            if date_range.get("end"):
+                                query = query.lte("assessment_date", date_range["end"])
+
+                        # Apply limit if specified
+                        if limit:
+                            query = query.limit(limit)
+
+                        result = query.execute()
+
+                        if result.data:
+                            # Calculate totals for each assessment
+                            enriched_assessments = []
+                            for assessment in result.data:
+                                enriched = calculate_assessment_total(
+                                    assessment, assessment_type
+                                )
+                                enriched_assessments.append(enriched)
+
+                            assessments[assessment_type] = {
+                                "assessment_type": f"{assessment_type.upper()}",
+                                "assessment_count": len(enriched_assessments),
+                                "assessments": enriched_assessments,
+                                "latest_score": (
+                                    enriched_assessments[0]["calculated_total"]
+                                    if enriched_assessments
+                                    else None
+                                ),
+                                "latest_severity": (
+                                    enriched_assessments[0].get("severity")
+                                    or enriched_assessments[0].get("wellbeing_level")
+                                    if enriched_assessments
+                                    else None
+                                ),
+                            }
+                        else:
+                            assessments[assessment_type] = {
+                                "message": f"No {assessment_type} assessments found"
+                            }
+
+                    except Exception as e:
+                        assessments[assessment_type] = {
+                            "error": f"Failed to retrieve {assessment_type} data: {str(e)}"
+                        }
 
             # Calculate summary statistics
             total_assessments = sum(
@@ -570,21 +636,23 @@ def create_assessment_tools(mcp: FastMCP):
                         or data.get("latest_emotion_regulation_level"),
                     }
 
+            # Build summary for requested assessment types only
+            summary = {}
+            for assessment_type in assessment_types:
+                summary[f"{assessment_type}_count"] = assessments.get(
+                    assessment_type, {}
+                ).get("assessment_count", 0)
+
             return {
                 "patient_id": patient_id,
                 "total_assessments": total_assessments,
                 "assessment_breakdown": assessments,
                 "latest_scores_summary": latest_scores,
-                "summary": {
-                    "ptsd_count": assessments.get("ptsd", {}).get(
-                        "assessment_count", 0
-                    ),
-                    "phq_count": assessments.get("phq", {}).get("assessment_count", 0),
-                    "gad_count": assessments.get("gad", {}).get("assessment_count", 0),
-                    "who_count": assessments.get("who", {}).get("assessment_count", 0),
-                    "ders_count": assessments.get("ders", {}).get(
-                        "assessment_count", 0
-                    ),
+                "summary": summary,
+                "filters_applied": {
+                    "assessment_types": assessment_types,
+                    "date_range": date_range,
+                    "limit": limit,
                 },
             }
 
