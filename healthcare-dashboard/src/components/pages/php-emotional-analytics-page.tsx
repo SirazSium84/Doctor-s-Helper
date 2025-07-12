@@ -359,7 +359,7 @@ export function PHPEmotionalAnalyticsPage() {
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false)
   const [hoveredSlice, setHoveredSlice] = useState<string | null>(null)
   
-  const { selectedPatient } = useDashboardStore()
+  const { selectedPatient, phpDailyAssessments } = useDashboardStore()
 
   // Hover handlers for pie chart
   const handleSliceHover = useCallback((data: any, index: number) => {
@@ -370,42 +370,29 @@ export function PHPEmotionalAnalyticsPage() {
     setHoveredSlice(null)
   }, [])
 
-  // Fetch PHP data
+  // Use PHP data from store
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      console.log('🔄 Loading PHP Emotional Analytics data from cache...')
+    if (phpDailyAssessments.length > 0) {
+      // Filter by selected patient if needed
+      const filteredData = selectedPatient === 'all' || !selectedPatient 
+        ? phpDailyAssessments 
+        : phpDailyAssessments.filter(assessment => assessment.groupIdentifier === selectedPatient)
       
-      try {
-        // Get PHP data from comprehensive cache
-        const allPhpData = await comprehensiveDataService.getPHPAssessments()
-        
-        // Filter by selected patient if needed
-        const filteredData = selectedPatient === 'all' || !selectedPatient 
-          ? allPhpData 
-          : allPhpData.filter(assessment => assessment.groupIdentifier === selectedPatient)
-        
-        setPhpData(filteredData)
-        
-        // Better detection of data source based on real data patterns
-        const isLiveData = filteredData.length > 0 && 
-          filteredData[0].uniqueId && 
-          !filteredData[0].uniqueId.startsWith('php_') &&
-          filteredData[0].uniqueId.length > 10 // Real patient IDs are longer
-        
-        setDataSource(isLiveData ? 'live' : 'demo')
-        console.log(`✅ Loaded ${filteredData.length} PHP assessments from cache (${isLiveData ? 'LIVE' : 'DEMO'} data)`)
-        
-      } catch (error) {
-        console.error('❌ Error loading PHP data from cache:', error)
-        setPhpData([])
-        setDataSource('demo')
-      } finally {
-        setIsLoading(false)
-      }
+      setPhpData(filteredData)
+      
+      // Better detection of data source based on real data patterns
+      const isLiveData = filteredData.length > 0 && 
+        filteredData[0].uniqueId && 
+        !filteredData[0].uniqueId.startsWith('php_') &&
+        filteredData[0].uniqueId.length > 10 // Real patient IDs are longer
+      
+      setDataSource(isLiveData ? 'live' : 'demo')
+      setIsLoading(false)
+      
+    } else {
+      setIsLoading(true)
     }
-    loadData()
-  }, [selectedPatient])
+  }, [phpDailyAssessments, selectedPatient])
 
   // Filter data by time range
   const filteredData = useMemo(() => {
@@ -495,7 +482,6 @@ export function PHPEmotionalAnalyticsPage() {
       .filter(trend => trend.assessments > 0) // Only include months with actual data
       .sort((a, b) => a.month.localeCompare(b.month))
     
-    console.log('📅 Monthly Trends Data:', result)
     return result
   }, [filteredData])
 
@@ -571,8 +557,6 @@ export function PHPEmotionalAnalyticsPage() {
       else patient.engagementLevel = 'Low'
     })
     
-    console.log(`📊 Patient Engagement Analysis: ${Object.keys(patients).length} unique patients found`)
-    
     return Object.values(patients).sort((a, b) => b.assessmentCount - a.assessmentCount)
   }, [filteredData])
 
@@ -622,15 +606,10 @@ export function PHPEmotionalAnalyticsPage() {
       distressTolerance: { count: 0, label: 'Distress Tolerance', color: '#06b6d4' }
     }
     
-    console.log('🔍 Debugging Coping Strategies - Total filtered data:', filteredData.length)
-    
     filteredData.forEach((assessment, index) => {
       Object.keys(strategies).forEach(strategy => {
         if (assessment[strategy as keyof PHPAssessment]) {
           strategies[strategy as keyof typeof strategies].count++
-          if (index < 3) { // Log first few matches for debugging
-            console.log(`✓ Found ${strategy} in assessment ${index}`)
-          }
         }
       })
     })
@@ -645,8 +624,6 @@ export function PHPEmotionalAnalyticsPage() {
       .filter(item => item.count > 0) // Only include strategies that have data
       .sort((a, b) => b.count - a.count)
     
-    console.log('📊 Coping Strategies Data:', result)
-    console.log('📊 Detailed breakdown:', result.map(item => `${item.strategy}: ${item.count} (${item.percentage}%)`))
     return result
   }, [filteredData])
 

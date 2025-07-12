@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Users, Activity, TrendingUp, AlertTriangle, Heart, Shield, Brain, Target, Calendar, CheckCircle, Zap } from "lucide-react"
 import { OpenAIChat } from "@/components/openai-chat"
 import { CacheDebugPanel } from "@/components/cache-debug-panel"
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 
 export function WelcomePage() {
   const { patients, dashboardStats } = useDashboardStore()
@@ -142,14 +142,10 @@ export function WelcomePage() {
   useEffect(() => {
     const fetchMotivationThemes = async () => {
       try {
-        console.log('🎯 Fetching motivation themes from MCP server...')
         const response = await fetch('/api/motivation-themes')
         const result = await response.json()
         
         if (result.success && result.data?.themes) {
-          console.log('✅ Successfully loaded motivation themes:', result.data.themes.length, 'themes')
-          console.log('📊 Data source:', result.source)
-          
           // Transform MCP data to word cloud format
           const themes = result.data.themes.map((theme: any) => ({
             text: theme.name,
@@ -166,7 +162,6 @@ export function WelcomePage() {
             setMotivationDataSource(result.data.metadata?.data_sources?.join(', ') || result.source)
           }
           
-          console.log('🎨 Updated motivation word cloud with real data')
         } else {
           console.warn('⚠️ Failed to load motivation themes, using fallback data')
           setMotivationDataSource('FALLBACK')

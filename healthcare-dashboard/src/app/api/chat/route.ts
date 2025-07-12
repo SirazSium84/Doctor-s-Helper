@@ -991,55 +991,55 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
           // Fall back to demo data if real data not available
           if (!isRealData) {
             tableData = [
-              {
-                "domain": "PTSD Checklist (PCL-5)",
-                "score": 43,
-                "maxScore": 80,
-                "severity": "Moderate",
-                "trend": "→",
-                "priority": "High"
-              },
-              {
-                "domain": "Depression Inventory (PHQ-9)",
-                "score": 11,
-                "maxScore": 27,
-                "severity": "Moderate",
-                "trend": "→",
-                "priority": "Medium"
-              },
-              {
-                "domain": "Anxiety Disorder Scale (GAD-7)",
-                "score": 15,
-                "maxScore": 21,
-                "severity": "Severe",
-                "trend": "↑",
-                "priority": "High"
-              },
-              {
-                "domain": "Functional Assessment (WHO-DAS)",
-                "score": 18,
-                "maxScore": 48,
-                "severity": "Moderate Impairment",
-                "trend": "↓",
-                "priority": "Medium"
-              },
-              {
-                "domain": "Emotion Regulation (DERS)",
-                "score": 72,
-                "maxScore": 180,
-                "severity": "Mild Difficulty",
-                "trend": "↓",
-                "priority": "Low"
-              }
-            ]
+            {
+              "domain": "PTSD Checklist (PCL-5)",
+              "score": 43,
+              "maxScore": 80,
+              "severity": "Moderate",
+              "trend": "→",
+              "priority": "High"
+            },
+            {
+              "domain": "Depression Inventory (PHQ-9)",
+              "score": 11,
+              "maxScore": 27,
+              "severity": "Moderate",
+              "trend": "→",
+              "priority": "Medium"
+            },
+            {
+              "domain": "Anxiety Disorder Scale (GAD-7)",
+              "score": 15,
+              "maxScore": 21,
+              "severity": "Severe",
+              "trend": "↑",
+              "priority": "High"
+            },
+            {
+              "domain": "Functional Assessment (WHO-DAS)",
+              "score": 18,
+              "maxScore": 48,
+              "severity": "Moderate Impairment",
+              "trend": "↓",
+              "priority": "Medium"
+            },
+            {
+              "domain": "Emotion Regulation (DERS)",
+              "score": 72,
+              "maxScore": 180,
+              "severity": "Mild Difficulty",
+              "trend": "↓",
+              "priority": "Low"
+            }
+          ]
 
             chartData = [
-              { "name": "PTSD", "value": 43 },
-              { "name": "Depression", "value": 11 },
-              { "name": "Anxiety", "value": 15 },
-              { "name": "Function", "value": 18 },
-              { "name": "Emotion Reg", "value": 72 }
-            ]
+            { "name": "PTSD", "value": 43 },
+            { "name": "Depression", "value": 11 },
+            { "name": "Anxiety", "value": 15 },
+            { "name": "Function", "value": 18 },
+            { "name": "Emotion Reg", "value": 72 }
+          ]
           }
 
           let response = `🏥 **COMPREHENSIVE CLINICAL ASSESSMENT**

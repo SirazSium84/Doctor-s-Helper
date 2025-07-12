@@ -6,31 +6,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 
 export function AssessmentScoresPage() {
   const { patients, assessmentScores, selectedPatient, viewMode } = useDashboardStore()
   const [searchTerm, setSearchTerm] = useState("")
 
-  const filteredScores = useMemo(() => {
-    let scores = assessmentScores
+  // Filter assessments based on selected patient and search term
+  const filteredAssessments = useMemo(() => {
+    let filtered = assessmentScores
 
-    if (viewMode === "individual" && selectedPatient) {
-      scores = scores.filter((score) => score.patientId === selectedPatient)
+    // Filter by selected patient
+    if (selectedPatient && selectedPatient !== "all") {
+      filtered = filtered.filter(assessment => assessment.patientId === selectedPatient)
     }
 
+    // Filter by search term
     if (searchTerm) {
-      scores = scores.filter((score) => {
-        const patient = patients.find((p) => p.id === score.patientId)
-        return (
-          patient?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          score.patientId.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+      const searchLower = searchTerm.toLowerCase()
+      filtered = filtered.filter(assessment => {
+        const patient = patients.find(p => p.id === assessment.patientId)
+        return patient?.name.toLowerCase().includes(searchLower) ||
+               patient?.id.toLowerCase().includes(searchLower) ||
+               assessment.date.includes(searchTerm)
       })
     }
 
-    return scores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [assessmentScores, patients, selectedPatient, viewMode, searchTerm])
+    return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  }, [assessmentScores, selectedPatient, searchTerm, patients])
 
   const getPatientName = (patientId: string) => {
     return patients.find((p) => p.id === patientId)?.name || patientId
@@ -44,6 +47,22 @@ export function AssessmentScoresPage() {
       <TableCell>
         <Badge className={colorClass}>{score}</Badge>
       </TableCell>
+    )
+  }
+
+  // Show loading state if no data is available yet
+  if (patients.length === 0 && assessmentScores.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading assessment data...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
@@ -90,7 +109,7 @@ export function AssessmentScoresPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredScores.map((score, index) => (
+                {filteredAssessments.map((score, index) => (
                   <TableRow key={index} className="border-gray-700 hover:bg-gray-700/50">
                     <TableCell className="text-white font-medium">{getPatientName(score.patientId)}</TableCell>
                     <TableCell className="text-gray-300">{new Date(score.date).toLocaleDateString()}</TableCell>
@@ -105,8 +124,16 @@ export function AssessmentScoresPage() {
             </Table>
           </div>
 
-          {filteredScores.length === 0 && (
-            <div className="text-center py-8 text-gray-400">No assessment scores found.</div>
+          {filteredAssessments.length === 0 && assessmentScores.length > 0 && (
+            <div className="text-center py-8 text-gray-400">
+              No assessment scores match your current filters.
+            </div>
+          )}
+          
+          {assessmentScores.length === 0 && (
+            <div className="text-center py-8 text-gray-400">
+              No assessment scores found in the database.
+            </div>
           )}
         </CardContent>
       </Card>

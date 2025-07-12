@@ -22,33 +22,26 @@ interface DataCache {
 const CACHE_DURATION = 10 * 60 * 1000
 
 class ComprehensiveDataService {
-  private cache: DataCache | null = null
+  private cache: Map<string, { data: DataCache; timestamp: number }> = new Map()
   private isLoading = false
   private loadingPromise: Promise<DataCache> | null = null
 
   // Load all data upfront using optimized Supabase queries
   async loadAllData(): Promise<DataCache> {
-    // If already loading, return the existing promise
-    if (this.isLoading && this.loadingPromise) {
-      return this.loadingPromise
+    const cacheKey = 'comprehensive-data'
+    const cached = this.cache.get(cacheKey)
+    
+    if (cached && !this.isCacheExpired(cached)) {
+      return cached.data
     }
 
-    // Check if cache is still valid
-    if (this.cache && Date.now() - this.cache.timestamp < CACHE_DURATION) {
-      console.log('✅ Using cached comprehensive data')
-      return this.cache
-    }
-
-    this.isLoading = true
-    this.loadingPromise = this.performDataLoad()
-
-    try {
-      this.cache = await this.loadingPromise
-      return this.cache
-    } finally {
-      this.isLoading = false
-      this.loadingPromise = null
-    }
+    const data = await this.performDataLoad()
+    this.cache.set(cacheKey, {
+      data,
+      timestamp: Date.now()
+    })
+    
+    return data
   }
 
   private async performDataLoad(): Promise<DataCache> {
@@ -159,46 +152,46 @@ class ComprehensiveDataService {
       const [ptsdResult, phqResult, gadResult, whoResult, dersResult] = await Promise.all([
         supabase
           .from('PTSD')
-          .select('group_identifier, assessment_date, calculated_total, ptsd_q1_disturbing_memories, ptsd_q2_disturbing_dreams, ptsd_q3_reliving_experience, ptsd_q4_upset_reminders, ptsd_q5_physical_reactions, ptsd_q6_avoiding_memories, ptsd_q7_avoiding_reminders, ptsd_q8_memory_trouble, ptsd_q9_negative_beliefs, ptsd_q10_blaming_self_others, ptsd_q11_negative_feelings, ptsd_q12_loss_interest, ptsd_q13_feeling_distant, ptsd_q14_trouble_positive_feelings, ptsd_q15_irritable_behavior, ptsd_q16_risky_behavior, ptsd_q17_hypervigilant, ptsd_q18_easily_startled, ptsd_q19_concentration_difficulty, ptsd_q20_sleep_trouble')
+          .select('group_identifier, assessment_date, ptsd_q1_disturbing_memories, ptsd_q2_disturbing_dreams, ptsd_q3_reliving_experience, ptsd_q4_upset_reminders, ptsd_q5_physical_reactions, ptsd_q6_avoiding_memories, ptsd_q7_avoiding_reminders, ptsd_q8_memory_trouble, ptsd_q9_negative_beliefs, ptsd_q10_blaming_self_others, ptsd_q11_negative_feelings, ptsd_q12_loss_interest, ptsd_q13_feeling_distant, ptsd_q14_trouble_positive_feelings, ptsd_q15_irritable_behavior, ptsd_q16_risky_behavior, ptsd_q17_hypervigilant, ptsd_q18_easily_startled, ptsd_q19_concentration_difficulty, ptsd_q20_sleep_trouble')
           .in('group_identifier', patientIds)
           .not('assessment_date', 'is', null)
           .order('assessment_date', { ascending: false }),
         
         supabase
           .from('PHQ')
-          .select('group_identifier, assessment_date, calculated_total, col_1_little_interest_or_pleasure_in_doing_things, col_2_feeling_down_depressed_or_hopeless, col_3_trouble_falling_or_staying_asleep_or_sleeping_too_much, col_4_feeling_tired_or_having_little_energy, col_5_poor_appetite_or_overeating, col_6_feeling_bad_about_yourself_or_that_you_are_failure_or_hav, col_7_trouble_concentrating_on_things_such_as_reading_the_newsp, col_8_moving_or_speaking_so_slowly_that_other_people_could_have, col_9_thoughts_that_you_would_be_better_off_dead_or_of_hurting_')
+          .select('group_identifier, assessment_date, col_1_little_interest_or_pleasure_in_doing_things, col_2_feeling_down_depressed_or_hopeless, col_3_trouble_falling_or_staying_asleep_or_sleeping_too_much, col_4_feeling_tired_or_having_little_energy, col_5_poor_appetite_or_overeating, col_6_feeling_bad_about_yourself_or_that_you_are_failure_or_hav, col_7_trouble_concentrating_on_things_such_as_reading_the_newsp, col_8_moving_or_speaking_so_slowly_that_other_people_could_have, col_9_thoughts_that_you_would_be_better_off_dead_or_of_hurting_')
           .in('group_identifier', patientIds)
           .not('assessment_date', 'is', null)
           .order('assessment_date', { ascending: false }),
         
         supabase
           .from('GAD')
-          .select('group_identifier, assessment_date, calculated_total, col_1_feeling_nervous_anxious_or_on_edge, col_2_not_being_able_to_stop_or_control_worrying, col_3_worrying_too_much_about_different_things, col_4_trouble_relaxing, col_5_being_so_restless_that_it_is_too_hard_to_sit_still, col_6_becoming_easily_annoyed_or_irritable, col_7_feeling_afraid_as_if_something_awful_might_happen')
+          .select('group_identifier, assessment_date, col_1_feeling_nervous_anxious_or_on_edge, col_2_not_being_able_to_stop_or_control_worrying, col_3_worrying_too_much_about_different_things, col_4_trouble_relaxing, col_5_being_so_restless_that_it_is_too_hard_to_sit_still, col_5_being_so_restless_that_its_hard_to_sit_still, col_6_becoming_easily_annoyed_or_irritable, col_7_feeling_afraid_as_if_something_awful_might_happen')
           .in('group_identifier', patientIds)
           .not('assessment_date', 'is', null)
           .order('assessment_date', { ascending: false }),
         
         supabase
           .from('WHO')
-          .select('group_identifier, assessment_date, calculated_total, col_1_i_have_felt_cheerful_in_good_spirits, col_2_i_have_felt_calm_and_relaxed, col_3_i_have_felt_active_and_vigorous, col_4_i_woke_up_feeling_fresh_and_rested, col_5_my_daily_life_has_been_filled_with_things_that_interest_m')
+          .select('group_identifier, assessment_date, col_1_i_have_felt_cheerful_in_good_spirits, col_2_i_have_felt_calm_and_relaxed, col_3_i_have_felt_active_and_vigorous, col_4_i_woke_up_feeling_fresh_and_rested, col_5_my_daily_life_has_been_filled_with_things_that_interest_m')
           .in('group_identifier', patientIds)
           .not('assessment_date', 'is', null)
           .order('assessment_date', { ascending: false }),
         
         supabase
           .from('DERS')
-          .select('group_identifier, assessment_date, calculated_total')
+          .select('group_identifier, assessment_date, ders_q1_clear_feelings, ders_q2_pay_attention, ders_q3_overwhelming, ders_q4_no_idea, ders_q5_difficulty_sense, ders_q6_attentive, ders_q7_know_exactly, ders_q8_care_about, ders_q9_confused, ders_q10_acknowledge, ders_q11_angry_self, ders_q12_embarrassed, ders_q13_work_difficulty, ders_q14_out_control, ders_q15_remain_upset, ders_q16_end_depressed, ders_q17_valid_important, ders_q18_focus_difficulty, ders_q19_feel_out_control, ders_q20_get_things_done, ders_q21_ashamed, ders_q22_find_way_better, ders_q23_feel_weak, ders_q24_control_behaviors, ders_q25_feel_guilty, ders_q26_concentrate_difficulty, ders_q27_control_difficulty, ders_q28_nothing_to_do, ders_q29_irritated_self, ders_q30_feel_bad_self, ders_q31_wallowing, ders_q32_lose_control, ders_q33_think_difficulty, ders_q34_figure_out, ders_q35_long_time_better, ders_q36_emotions_overwhelming')
           .in('group_identifier', patientIds)
           .not('assessment_date', 'is', null)
           .order('assessment_date', { ascending: false })
       ])
 
       // Check for errors
-      if (ptsdResult.error) console.warn('PTSD query error:', ptsdResult.error)
-      if (phqResult.error) console.warn('PHQ query error:', phqResult.error)
-      if (gadResult.error) console.warn('GAD query error:', gadResult.error)
-      if (whoResult.error) console.warn('WHO query error:', whoResult.error)
-      if (dersResult.error) console.warn('DERS query error:', dersResult.error)
+      if (ptsdResult.error) console.error('PTSD query error:', ptsdResult.error)
+      if (phqResult.error) console.error('PHQ query error:', phqResult.error)
+      if (gadResult.error) console.error('GAD query error:', gadResult.error)
+      if (whoResult.error) console.error('WHO query error:', whoResult.error)
+      if (dersResult.error) console.error('DERS query error:', dersResult.error)
 
       // Combine assessments by patient and date
       const assessmentMap = new Map<string, AssessmentScore>()
@@ -221,7 +214,7 @@ class ComprehensiveDataService {
           }
 
           const score = assessmentMap.get(key)!
-          const totalScore = assessment.calculated_total || this.calculateScore(assessment, type)
+          const totalScore = this.calculateScore(assessment, type)
 
           switch (type) {
             case 'ptsd':
@@ -243,11 +236,11 @@ class ComprehensiveDataService {
         })
       }
 
-      processAssessments(ptsdResult.data, 'ptsd')
-      processAssessments(phqResult.data, 'phq')
-      processAssessments(gadResult.data, 'gad')
-      processAssessments(whoResult.data, 'who')
-      processAssessments(dersResult.data, 'ders')
+      processAssessments(ptsdResult.data || [], 'ptsd')
+      processAssessments(phqResult.data || [], 'phq')
+      processAssessments(gadResult.data || [], 'gad')
+      processAssessments(whoResult.data || [], 'who')
+      processAssessments(dersResult.data || [], 'ders')
 
       const assessments = Array.from(assessmentMap.values())
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -259,50 +252,103 @@ class ComprehensiveDataService {
     }
   }
 
-  // Calculate scores if not pre-calculated
+  // Calculate scores from individual question columns
   private calculateScore(assessment: any, type: 'ptsd' | 'phq' | 'gad' | 'who' | 'ders'): number {
     let total = 0
     
     switch (type) {
       case 'ptsd':
-        // Sum all PTSD questions
-        for (let i = 1; i <= 20; i++) {
-          const fieldName = `ptsd_q${i}_`
-          for (const [key, value] of Object.entries(assessment)) {
-            if (key.startsWith(fieldName)) {
-              total += Number(value) || 0
-            }
-          }
-        }
+        // Sum all PTSD questions (q1-q20)
+        const ptsdQuestions = [
+          'ptsd_q1_disturbing_memories', 'ptsd_q2_disturbing_dreams', 'ptsd_q3_reliving_experience',
+          'ptsd_q4_upset_reminders', 'ptsd_q5_physical_reactions', 'ptsd_q6_avoiding_memories',
+          'ptsd_q7_avoiding_reminders', 'ptsd_q8_memory_trouble', 'ptsd_q9_negative_beliefs',
+          'ptsd_q10_blaming_self_others', 'ptsd_q11_negative_feelings', 'ptsd_q12_loss_interest',
+          'ptsd_q13_feeling_distant', 'ptsd_q14_trouble_positive_feelings', 'ptsd_q15_irritable_behavior',
+          'ptsd_q16_risky_behavior', 'ptsd_q17_hypervigilant', 'ptsd_q18_easily_startled',
+          'ptsd_q19_concentration_difficulty', 'ptsd_q20_sleep_trouble'
+        ]
+        ptsdQuestions.forEach(question => {
+          const value = assessment[question]
+          total += Number(value) || 0
+        })
         break
       
       case 'phq':
-        // Sum all PHQ questions
-        for (let i = 1; i <= 9; i++) {
-          const value = assessment[`col_${i}_`] || 0
+        // Sum all PHQ questions (col_1 to col_9)
+        const phqQuestions = [
+          'col_1_little_interest_or_pleasure_in_doing_things',
+          'col_2_feeling_down_depressed_or_hopeless',
+          'col_3_trouble_falling_or_staying_asleep_or_sleeping_too_much',
+          'col_4_feeling_tired_or_having_little_energy',
+          'col_5_poor_appetite_or_overeating',
+          'col_6_feeling_bad_about_yourself_or_that_you_are_failure_or_hav',
+          'col_7_trouble_concentrating_on_things_such_as_reading_the_newsp',
+          'col_8_moving_or_speaking_so_slowly_that_other_people_could_have',
+          'col_9_thoughts_that_you_would_be_better_off_dead_or_of_hurting_'
+        ]
+        phqQuestions.forEach(question => {
+          const value = assessment[question]
           total += Number(value) || 0
-        }
+        })
         break
       
       case 'gad':
-        // Sum all GAD questions
-        for (let i = 1; i <= 7; i++) {
-          const value = assessment[`col_${i}_`] || 0
-          total += Number(value) || 0
-        }
+        // Sum all GAD questions (col_1 to col_7)
+        const gadQuestions = [
+          'col_1_feeling_nervous_anxious_or_on_edge',
+          'col_2_not_being_able_to_stop_or_control_worrying',
+          'col_3_worrying_too_much_about_different_things',
+          'col_4_trouble_relaxing',
+          'col_5_being_so_restless_that_it_is_too_hard_to_sit_still',
+          'col_6_becoming_easily_annoyed_or_irritable',
+          'col_7_feeling_afraid_as_if_something_awful_might_happen'
+        ]
+        gadQuestions.forEach(question => {
+          const value = assessment[question]
+          // Handle the special case where col_5 might be text
+          if (question === 'col_5_being_so_restless_that_it_is_too_hard_to_sit_still' && value === null) {
+            // Try the alternate column name
+            const altValue = assessment['col_5_being_so_restless_that_its_hard_to_sit_still']
+            total += Number(altValue) || 0
+          } else {
+            total += Number(value) || 0
+          }
+        })
         break
       
       case 'who':
-        // Sum all WHO questions
-        for (let i = 1; i <= 5; i++) {
-          const value = assessment[`col_${i}_`] || 0
+        // Sum all WHO questions (col_1 to col_5)
+        const whoQuestions = [
+          'col_1_i_have_felt_cheerful_in_good_spirits',
+          'col_2_i_have_felt_calm_and_relaxed',
+          'col_3_i_have_felt_active_and_vigorous',
+          'col_4_i_woke_up_feeling_fresh_and_rested',
+          'col_5_my_daily_life_has_been_filled_with_things_that_interest_m'
+        ]
+        whoQuestions.forEach(question => {
+          const value = assessment[question]
           total += Number(value) || 0
-        }
+        })
         break
       
       case 'ders':
-        // DERS total should be pre-calculated
-        total = assessment.calculated_total || 0
+        // Sum all DERS questions (q1-q36)
+        const dersQuestions = [
+          'ders_q1_clear_feelings', 'ders_q2_pay_attention', 'ders_q3_overwhelming', 'ders_q4_no_idea',
+          'ders_q5_difficulty_sense', 'ders_q6_attentive', 'ders_q7_know_exactly', 'ders_q8_care_about',
+          'ders_q9_confused', 'ders_q10_acknowledge', 'ders_q11_angry_self', 'ders_q12_embarrassed',
+          'ders_q13_work_difficulty', 'ders_q14_out_control', 'ders_q15_remain_upset', 'ders_q16_end_depressed',
+          'ders_q17_valid_important', 'ders_q18_focus_difficulty', 'ders_q19_feel_out_control', 'ders_q20_get_things_done',
+          'ders_q21_ashamed', 'ders_q22_find_way_better', 'ders_q23_feel_weak', 'ders_q24_control_behaviors',
+          'ders_q25_feel_guilty', 'ders_q26_concentrate_difficulty', 'ders_q27_control_difficulty', 'ders_q28_nothing_to_do',
+          'ders_q29_irritated_self', 'ders_q30_feel_bad_self', 'ders_q31_wallowing', 'ders_q32_lose_control',
+          'ders_q33_think_difficulty', 'ders_q34_figure_out', 'ders_q35_long_time_better', 'ders_q36_emotions_overwhelming'
+        ]
+        dersQuestions.forEach(question => {
+          const value = assessment[question]
+          total += Number(value) || 0
+        })
         break
     }
     
@@ -348,9 +394,22 @@ class ComprehensiveDataService {
       bpsResult.data?.forEach((record: any) => {
         if (record.drugs_of_choice) {
           try {
-            const drugsArray = Array.isArray(record.drugs_of_choice) 
-              ? record.drugs_of_choice 
-              : JSON.parse(record.drugs_of_choice)
+            let drugsArray: string[]
+            
+            if (Array.isArray(record.drugs_of_choice)) {
+              drugsArray = record.drugs_of_choice
+            } else if (typeof record.drugs_of_choice === 'string') {
+              // Try to parse as JSON first
+              try {
+                drugsArray = JSON.parse(record.drugs_of_choice)
+              } catch (jsonError) {
+                // If JSON parsing fails, treat as a single drug string
+                drugsArray = [record.drugs_of_choice]
+              }
+            } else {
+              // Handle other data types
+              drugsArray = [String(record.drugs_of_choice)]
+            }
 
             drugsArray.forEach((drug: string, index: number) => {
               substanceHistory.push({
@@ -368,9 +427,9 @@ class ComprehensiveDataService {
                 treatmentHistory: []
               })
             })
-          } catch (parseError) {
-            console.warn('Failed to parse drugs_of_choice:', parseError)
-          }
+                      } catch (parseError) {
+              // Skip invalid drug data
+            }
         }
       })
 
@@ -489,8 +548,7 @@ class ComprehensiveDataService {
 
   // Clear cache to force refresh
   clearCache(): void {
-    this.cache = null
-    console.log('🧹 Comprehensive data cache cleared')
+    this.cache.clear()
   }
 
   // Background refresh - update cache without blocking UI
@@ -500,7 +558,7 @@ class ComprehensiveDataService {
       const oldCache = this.cache
       
       // Clear cache to force fresh load
-      this.cache = null
+      this.cache.clear()
       
       // Load fresh data
       await this.loadAllData()
@@ -527,17 +585,17 @@ class ComprehensiveDataService {
 
   // Get cache info for debugging
   getCacheInfo(): { hasCache: boolean; cacheAge?: number; dataStats?: any } {
-    if (!this.cache) {
+    if (this.cache.size === 0) {
       return { hasCache: false }
     }
 
-    const cacheAge = Date.now() - this.cache.timestamp
+    const cacheAge = Date.now() - this.cache.get('comprehensive-data')!.timestamp
     const dataStats = {
-      patients: this.cache.patients.length,
-      assessments: this.cache.assessments.length,
-      substanceHistory: this.cache.substanceHistory.length,
-      phpAssessments: this.cache.phpAssessments.length,
-      bpsAssessments: this.cache.bpsAssessments.length
+      patients: this.cache.get('comprehensive-data')!.data.patients.length,
+      assessments: this.cache.get('comprehensive-data')!.data.assessments.length,
+      substanceHistory: this.cache.get('comprehensive-data')!.data.substanceHistory.length,
+      phpAssessments: this.cache.get('comprehensive-data')!.data.phpAssessments.length,
+      bpsAssessments: this.cache.get('comprehensive-data')!.data.bpsAssessments.length
     }
 
     return {

@@ -36,7 +36,10 @@ export default function Dashboard() {
     setSubstanceHistory,
     setPHPDailyAssessments, 
     setAHCMAssessments, 
-    setDashboardStats 
+    setDashboardStats,
+    patients,
+    assessmentScores,
+    phpDailyAssessments
   } = useDashboardStore()
 
   useEffect(() => {
@@ -44,58 +47,53 @@ export default function Dashboard() {
       try {
         setIsLoading(true)
         setLoadingStatus("Loading comprehensive healthcare data...")
-        console.log('🚀 Loading all dashboard data using optimized Supabase queries...')
         
-        // Load all data at once using comprehensive data service
+        // Load all data at once using the comprehensive service
         const dataCache = await comprehensiveDataService.loadAllData()
         
-        setLoadingStatus("Setting up dashboard...")
-        
-        // Set all data from cache
+        // Update store with loaded data
         setPatients(dataCache.patients)
         setAssessmentScores(dataCache.assessments)
-        setSubstanceHistory(dataCache.substanceHistory)
         setBPSAssessments(dataCache.bpsAssessments)
+        setSubstanceHistory(dataCache.substanceHistory)
         setPHPDailyAssessments(dataCache.phpAssessments)
-        setDashboardStats(dataCache.dashboardStats)
+        setAHCMAssessments([]) // Not loaded yet
         
-        // AHCM assessments not yet implemented
-        setAHCMAssessments([])
-
-        setLoadingStatus("Complete!")
-        console.log(`🎉 Comprehensive dashboard data loading completed:`)
-        console.log(`  📋 ${dataCache.patients.length} patients`)
-        console.log(`  📊 ${dataCache.assessments.length} assessments`)
-        console.log(`  💊 ${dataCache.substanceHistory.length} substance history records`)
-        console.log(`  🏥 ${dataCache.phpAssessments.length} PHP assessments`)
-        console.log(`  🧠 ${dataCache.bpsAssessments.length} BPS assessments`)
+        // Calculate dashboard stats
+        const stats = {
+          totalPatients: dataCache.patients.length,
+          totalAssessments: dataCache.assessments.length,
+          avgAssessments: dataCache.patients.length > 0 ? Math.round(dataCache.assessments.length / dataCache.patients.length) : 0,
+          highRiskPatients: dataCache.assessments.filter(a => 
+            (a.phq && a.phq > 15) || 
+            (a.gad && a.gad > 15) || 
+            (a.pcl && a.pcl > 50)
+          ).length
+        }
+        setDashboardStats(stats)
         
-        // Start background refresh for keeping data up-to-date
-        comprehensiveDataService.startBackgroundRefresh()
+        setLoadingStatus("Data loaded successfully!")
+        
       } catch (error) {
-        console.error('💥 Error loading comprehensive dashboard data:', error)
-        setLoadingStatus("Error loading data")
-        // Set empty states to prevent UI crashes
-        setPatients([])
-        setAssessmentScores([])
-        setSubstanceHistory([])
-        setBPSAssessments([])
-        setPHPDailyAssessments([])
-        setAHCMAssessments([])
-        setDashboardStats({
-          totalPatients: 0,
-          totalAssessments: 0,
-          avgAssessments: 0,
-          highRiskPatients: 0
-        })
+        console.error('Failed to load dashboard data:', error)
+        setLoadingStatus("Failed to load data")
       } finally {
         setIsLoading(false)
       }
     }
 
-    // Start loading data immediately
     loadData()
-  }, [setPatients, setAssessmentScores, setBPSAssessments, setSubstanceHistory, setPHPDailyAssessments, setAHCMAssessments, setDashboardStats])
+  }, [])
+
+  // Debug: Log store state changes
+  useEffect(() => {
+    console.log('🔍 Store state updated:', {
+      patients: patients.length,
+      assessmentScores: assessmentScores.length,
+      phpDailyAssessments: phpDailyAssessments.length,
+      isLoading
+    })
+  }, [patients, assessmentScores, phpDailyAssessments, isLoading])
 
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -155,6 +153,15 @@ export default function Dashboard() {
       <NavigationTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="container mx-auto px-6 py-6">
+        {isLoading && (
+          <div className="mb-6 p-4 bg-gray-800 border border-gray-600 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+              <p className="text-gray-300">{loadingStatus}</p>
+            </div>
+          </div>
+        )}
+
         {/* Only show PatientSelector with view mode for specific pages that need it */}
         {activeTab !== "welcome" && activeTab !== "bps" && activeTab !== "php" && (
           <div className="mb-6">

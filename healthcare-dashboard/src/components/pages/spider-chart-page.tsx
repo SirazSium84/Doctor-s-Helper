@@ -4,7 +4,7 @@ import { useDashboardStore } from "@/store/dashboard-store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend, Tooltip } from "recharts"
-import { useMemo } from "react"
+import { useMemo, useEffect } from "react"
 import { TrendingUp, TrendingDown, AlertTriangle, Info } from "lucide-react"
 
 export function SpiderChartPage() {
@@ -54,6 +54,7 @@ export function SpiderChartPage() {
     },
   }
 
+  // Process data for spider chart
   const chartData = useMemo(() => {
     if (viewMode === "individual" && selectedPatient) {
       // Individual patient data
@@ -176,6 +177,22 @@ export function SpiderChartPage() {
   const criticalScores = useMemo(() => {
     return chartData.filter(item => item.severity === "severe" || item.severity === "moderate").length
   }, [chartData])
+
+  // Show loading state if no data is available yet
+  if (patients.length === 0 && assessmentScores.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading assessment data...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

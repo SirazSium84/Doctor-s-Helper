@@ -3,7 +3,7 @@ import type {
   Patient,
   AssessmentScore,
   BPSAssessment,
-  PHPDailyAssessment,
+  PHPAssessment,
   AHCMAssessment,
   SubstanceHistory,
   ViewMode,
@@ -21,7 +21,7 @@ interface DashboardState {
   assessmentScores: AssessmentScore[]
   bpsAssessments: BPSAssessment[]
   substanceHistory: SubstanceHistory[]
-  phpDailyAssessments: PHPDailyAssessment[]
+  phpDailyAssessments: PHPAssessment[]
   ahcmAssessments: AHCMAssessment[]
   dashboardStats: DashboardStats
   selectedPatient: string | null
@@ -32,7 +32,7 @@ interface DashboardState {
   setAssessmentScores: (scores: AssessmentScore[]) => void
   setBPSAssessments: (assessments: BPSAssessment[]) => void
   setSubstanceHistory: (history: SubstanceHistory[]) => void
-  setPHPDailyAssessments: (assessments: PHPDailyAssessment[]) => void
+  setPHPDailyAssessments: (assessments: PHPAssessment[]) => void
   setAHCMAssessments: (assessments: AHCMAssessment[]) => void
   setDashboardStats: (stats: DashboardStats) => void
 }
