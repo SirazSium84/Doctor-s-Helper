@@ -162,8 +162,8 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Only show PatientSelector with view mode for specific pages that need it */}
-        {activeTab !== "welcome" && activeTab !== "bps" && activeTab !== "php" && (
+        {/* Only show PatientSelector for specific pages that need it */}
+        {activeTab !== "welcome" && activeTab !== "bps" && activeTab !== "php" && activeTab !== "scores" && (
           <div className="mb-6">
             <PatientSelector showViewMode={true} currentTab={activeTab} />
           </div>

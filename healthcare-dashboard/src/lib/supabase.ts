@@ -164,7 +164,7 @@ export interface PHPSupabaseRow {
   depressed?: boolean
   alone?: boolean
   // Coping skills
-  mindfulnessmeditation?: boolean
+  mindfulness_meditation?: boolean
   distress_tolerance?: boolean
   opposite_action?: boolean
   take_my_meds?: boolean

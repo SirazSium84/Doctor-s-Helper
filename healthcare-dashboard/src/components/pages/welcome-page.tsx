@@ -155,11 +155,13 @@ export function WelcomePage() {
           
           setMotivationWords(themes)
           
-          // Set data source based on API response
+          // Set data source based on API response (without showing technical details)
           if (result.source === 'DIRECT_DATABASE') {
-            setMotivationDataSource(`OPENAI_ANALYSIS (${result.data.metadata?.data_sources?.join(', ') || 'Database'})`)
+            setMotivationDataSource('OPENAI_ANALYSIS')
+          } else if (result.source === 'MCP_SERVER') {
+            setMotivationDataSource('REAL_DATA')
           } else {
-            setMotivationDataSource(result.data.metadata?.data_sources?.join(', ') || result.source)
+            setMotivationDataSource('ANALYZED_DATA')
           }
           
         } else {
@@ -508,35 +510,14 @@ export function WelcomePage() {
           {/* Patient Motivations Wordcloud */}
           <Card className="bg-gray-800 border-gray-700 hover:shadow-2xl transition-all duration-300">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    <Heart className="h-5 w-5 text-pink-400" />
-                    Motivation Themes
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Key motivational factors identified in patient assessments
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 rounded-lg">
-                  <div className={`w-2 h-2 rounded-full ${
-                    motivationDataSource.includes('OPENAI_ANALYSIS') ? 'bg-purple-500' :
-                    motivationDataSource.includes('MCP_SERVER') ? 'bg-emerald-500' :
-                    motivationDataSource.includes('DIRECT_DATABASE') ? 'bg-blue-500' :
-                    motivationDataSource.includes('FALLBACK') ? 'bg-amber-500' :
-                    motivationDataSource.includes('ERROR') ? 'bg-red-500' :
-                    'bg-blue-500 animate-pulse'
-                  }`}></div>
-                  <span className="text-xs text-gray-400 font-medium">
-                    {motivationDataSource === 'LOADING' ? 'Loading...' : 
-                     motivationDataSource.includes('OPENAI_ANALYSIS') ? '🧠 OpenAI Analysis' :
-                     motivationDataSource.includes('MCP_SERVER') ? 'MCP Server' :
-                     motivationDataSource.includes('DIRECT_DATABASE') ? 'Real Data' :
-                     motivationDataSource.includes('FALLBACK') ? 'Fallback Data' :
-                     motivationDataSource.includes('ERROR') ? 'Demo Data' :
-                     motivationDataSource}
-                  </span>
-                </div>
+              <div>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <Heart className="h-5 w-5 text-pink-400" />
+                  Motivation Themes
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Key motivational factors identified in patient assessments
+                </CardDescription>
               </div>
             </CardHeader>
             <CardContent>

@@ -988,7 +988,7 @@ function transformPHPData(row: any): PHPAssessment {
     depressed: row.depressed || false,
     alone: row.alone || false,
     // Coping skills
-    mindfulnessmeditation: row.mindfulnessmeditation || false,
+    mindfulnessmeditation: row.mindfulness_meditation || false,
     distressTolerance: row.distress_tolerance || false,
     oppositeAction: row.opposite_action || false,
     takeMyMeds: row.take_my_meds || false,

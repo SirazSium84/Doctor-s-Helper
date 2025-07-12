@@ -53,7 +53,7 @@ CREATE TABLE public.PHP (
   alone boolean,
   
   -- Coping skills (boolean)
-  mindfulnessmeditation boolean,
+  mindfulness_meditation boolean,
   distress_tolerance boolean,
   opposite_action boolean,
   take_my_meds boolean,

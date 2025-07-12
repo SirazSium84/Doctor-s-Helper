@@ -29,7 +29,6 @@ CREATE TABLE public.AHCM (
   errand_difficulty text,
   CONSTRAINT AHCM_pkey PRIMARY KEY (group_identifier)
 );
-
 CREATE TABLE public.BPS (
   unnamed_0 text,
   group_identifier text NOT NULL,
@@ -37,7 +36,7 @@ CREATE TABLE public.BPS (
   birthdate text,
   age bigint,
   ext_motivation text,
-  int_motivation jsonb,
+  int_motivation text,
   num_prev_treatments text,
   drugs_of_choice jsonb,
   drug_craving_score bigint,
@@ -52,7 +51,6 @@ CREATE TABLE public.BPS (
   bps_total bigint,
   CONSTRAINT BPS_pkey PRIMARY KEY (group_identifier)
 );
-
 CREATE TABLE public.DERS (
   unique_id text NOT NULL,
   group_identifier text,
@@ -95,7 +93,6 @@ CREATE TABLE public.DERS (
   ders_q9_confused bigint,
   CONSTRAINT DERS_pkey PRIMARY KEY (unique_id)
 );
-
 CREATE TABLE public.DERS_2 (
   unique_id text NOT NULL,
   group_identifier text,
@@ -138,7 +135,6 @@ CREATE TABLE public.DERS_2 (
   ders2_q9_confused bigint,
   CONSTRAINT DERS_2_pkey PRIMARY KEY (unique_id)
 );
-
 CREATE TABLE public.GAD (
   unique_id text NOT NULL,
   group_identifier text,
@@ -153,7 +149,6 @@ CREATE TABLE public.GAD (
   col_7_feeling_afraid_as_if_something_awful_might_happen bigint,
   CONSTRAINT GAD_pkey PRIMARY KEY (unique_id)
 );
-
 CREATE TABLE public.PHP (
   unique_id text NOT NULL,
   group_identifier text,
@@ -172,7 +167,7 @@ CREATE TABLE public.PHP (
   anxiety boolean,
   depressed boolean,
   alone boolean,
-  mindfulnessmeditation boolean,
+  mindfulness_meditation boolean,
   distress_tolerance boolean,
   opposite_action boolean,
   take_my_meds boolean,
@@ -192,7 +187,6 @@ CREATE TABLE public.PHP (
   therapy boolean,
   CONSTRAINT PHP_pkey PRIMARY KEY (unique_id)
 );
-
 CREATE TABLE public.PHQ (
   unique_id text NOT NULL,
   group_identifier text,
@@ -209,7 +203,6 @@ CREATE TABLE public.PHQ (
   col_9_thoughts_that_you_would_be_better_off_dead_or_of_hurting_ bigint,
   CONSTRAINT PHQ_pkey PRIMARY KEY (unique_id)
 );
-
 CREATE TABLE public.PTSD (
   unique_id text NOT NULL,
   group_identifier text,
@@ -236,8 +229,7 @@ CREATE TABLE public.PTSD (
   ptsd_q9_negative_beliefs bigint,
   CONSTRAINT PTSD_pkey PRIMARY KEY (unique_id)
 );
-
-CREATE TABLE public."Patient Intake History" (
+CREATE TABLE public.Patient Intake History (
   group_identifier text NOT NULL,
   initial_group_identifier text,
   mult_patient boolean,
@@ -263,19 +255,17 @@ CREATE TABLE public."Patient Intake History" (
   ahcm_avg_phys_minutes bigint,
   ahcm_safety_total bigint,
   ahcm_mental_total text,
-  CONSTRAINT "Patient Intake History_pkey" PRIMARY KEY (group_identifier)
+  CONSTRAINT Patient Intake History_pkey PRIMARY KEY (group_identifier)
 );
-
-CREATE TABLE public."Patient Substance History" (
+CREATE TABLE public.Patient Substance History (
   group_identifier text NOT NULL,
   substance text NOT NULL,
   use_flag bigint,
   pattern_of_use text,
   pattern_of_use_consolidated text,
-  CONSTRAINT "Patient Substance History_pkey" PRIMARY KEY (group_identifier, substance)
+  CONSTRAINT Patient Substance History_pkey PRIMARY KEY (group_identifier, substance)
 );
-
-CREATE TABLE public."STATS TEST" (
+CREATE TABLE public.STATS TEST (
   group_identifier text NOT NULL,
   who bigint,
   gad bigint,
@@ -287,9 +277,8 @@ CREATE TABLE public."STATS TEST" (
   admission_dt text,
   discharge_dt text,
   program text,
-  CONSTRAINT "STATS TEST_pkey" PRIMARY KEY (group_identifier)
+  CONSTRAINT STATS TEST_pkey PRIMARY KEY (group_identifier)
 );
-
 CREATE TABLE public.WHO (
   unique_id text NOT NULL,
   group_identifier text,
@@ -300,12 +289,4 @@ CREATE TABLE public.WHO (
   col_4_i_woke_up_feeling_fresh_and_rested text,
   col_5_my_daily_life_has_been_filled_with_things_that_interest_m bigint,
   CONSTRAINT WHO_pkey PRIMARY KEY (unique_id)
-);
-
--- Key Tables for Healthcare Dashboard:
--- 1. "Patient Substance History" - Main table for substance use pie charts
--- 2. "BPS" - Biopsychosocial assessments with drugs_of_choice (JSONB)
--- 3. "STATS TEST" - Main patient registry and summary stats
--- 4. Assessment tables: PTSD, PHQ, GAD, WHO, DERS - Individual assessments
--- 5. "PHP" - Partial Hospitalization Program daily assessments
--- 6. "AHCM" - Advanced Healthcare Case Management assessments 
+); 
