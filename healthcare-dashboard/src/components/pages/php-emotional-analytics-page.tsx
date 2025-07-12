@@ -379,19 +379,19 @@ export function PHPEmotionalAnalyticsPage() {
         : phpDailyAssessments.filter(assessment => assessment.groupIdentifier === selectedPatient)
       
       setPhpData(filteredData)
-      
-      // Better detection of data source based on real data patterns
+        
+        // Better detection of data source based on real data patterns
       const isLiveData = filteredData.length > 0 && 
         filteredData[0].uniqueId && 
         !filteredData[0].uniqueId.startsWith('php_') &&
         filteredData[0].uniqueId.length > 10 // Real patient IDs are longer
-      
-      setDataSource(isLiveData ? 'live' : 'demo')
-      setIsLoading(false)
+        
+        setDataSource(isLiveData ? 'live' : 'demo')
+        setIsLoading(false)
       
     } else {
       setIsLoading(true)
-    }
+      }
   }, [phpDailyAssessments, selectedPatient])
 
   // Filter data by time range

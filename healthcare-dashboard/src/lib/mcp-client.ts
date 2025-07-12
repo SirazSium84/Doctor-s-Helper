@@ -29,7 +29,7 @@ class MCPClient {
     // Check if we're in a browser environment or server environment
     if (typeof window !== 'undefined') {
       // Client-side: use relative URL
-      this.mcpEndpoint = '/api/mcp'
+    this.mcpEndpoint = '/api/mcp'
     } else {
       // Server-side: construct absolute URL
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL 
