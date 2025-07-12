@@ -359,7 +359,7 @@ export function PHPEmotionalAnalyticsPage() {
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false)
   const [hoveredSlice, setHoveredSlice] = useState<string | null>(null)
   
-  const { selectedPatient, phpDailyAssessments, viewMode, setViewMode } = useDashboardStore()
+  const { selectedPatient, phpDailyAssessments, viewMode, setViewMode, setSelectedPatient } = useDashboardStore()
 
   // Hover handlers for pie chart
   const handleSliceHover = useCallback((data: any, index: number) => {
@@ -372,11 +372,23 @@ export function PHPEmotionalAnalyticsPage() {
 
   // Use PHP data from store
   useEffect(() => {
+    console.log('🔄 PHP Data Update:', { 
+      phpDailyAssessments: phpDailyAssessments.length, 
+      selectedPatient, 
+      viewMode 
+    })
+    
     if (phpDailyAssessments.length > 0) {
-      // Filter by selected patient if needed
-      const filteredData = selectedPatient === 'all' || !selectedPatient 
-        ? phpDailyAssessments 
-        : phpDailyAssessments.filter(assessment => assessment.groupIdentifier === selectedPatient)
+      // Filter by view mode and selected patient
+      let filteredData = phpDailyAssessments
+      
+      // Apply patient filtering based on view mode
+      if (viewMode === 'individual' && selectedPatient && selectedPatient !== 'all') {
+        filteredData = phpDailyAssessments.filter(assessment => assessment.groupIdentifier === selectedPatient)
+        console.log(`🎯 Individual view: Filtered to ${filteredData.length} assessments for patient ${selectedPatient}`)
+      } else {
+        console.log(`👥 All patients view: Using all ${filteredData.length} assessments`)
+      }
       
       setPhpData(filteredData)
         
@@ -392,7 +404,7 @@ export function PHPEmotionalAnalyticsPage() {
     } else {
       setIsLoading(true)
       }
-  }, [phpDailyAssessments, selectedPatient])
+  }, [phpDailyAssessments, selectedPatient, viewMode])
 
   // Filter data by time range
   const filteredData = useMemo(() => {
@@ -740,7 +752,10 @@ export function PHPEmotionalAnalyticsPage() {
               <div>
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    onClick={() => setViewMode('all')}
+                    onClick={() => {
+                      setViewMode('all')
+                      setSelectedPatient(null) // Reset patient selection when switching to all patients
+                    }}
                     className={`btn ${viewMode === 'all' ? 'btn-primary' : 'btn-ghost'} flex items-center justify-center gap-2`}
                   >
                     <Users className="w-4 h-4" />
