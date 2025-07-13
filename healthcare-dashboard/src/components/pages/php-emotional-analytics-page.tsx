@@ -1,17 +1,25 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PatientSelector } from '@/components/patient-selector'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, AreaChart, Area, ComposedChart } from 'recharts'
-import { TrendingUp, TrendingDown, Brain, Heart, Shield, Activity, Calendar, Users, AlertTriangle, CheckCircle, Target, Zap, Pill, Clock, MessageSquare, Filter, X } from 'lucide-react'
+import {
+  AreaChart, Area,
+  BarChart, Bar,
+  PieChart, Pie, Cell,
+  CartesianGrid, XAxis, YAxis,
+  Tooltip, ResponsiveContainer
+} from 'recharts'
+import {
+  TrendingUp, TrendingDown, Brain, Heart, Shield, Activity, Calendar, Users, AlertTriangle, CheckCircle, Target, Zap, Pill, Clock, MessageSquare, Filter, X
+} from 'lucide-react'
 import { useDashboardStore } from '@/store/dashboard-store'
 import { comprehensiveDataService } from '@/lib/comprehensive-data-service'
 import { calculateEmotionalMetrics, calculateCopingSkillsMetrics, calculateSelfCareMetrics } from '@/lib/supabase-service'
-import { PHPAssessment, EmotionalStateMetrics, CopingSkillsMetrics, SelfCareMetrics } from '@/types/assessments'
+import { PHPAssessment } from '@/types/assessments'
 
 interface MonthlyTrend {
   month: string
@@ -1139,22 +1147,6 @@ export function PHPEmotionalAnalyticsPage() {
                   ]}
                   labelFormatter={() => ''}
                 />
-                <Legend 
-                  verticalAlign="bottom" 
-                  height={36}
-                  iconType="circle"
-                  wrapperStyle={{ 
-                    fontSize: '12px', 
-                    color: '#9CA3AF',
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={(e: any) => {
-                    if (e && e.value) {
-                      setHoveredSlice(e.value)
-                    }
-                  }}
-                  onMouseLeave={() => setHoveredSlice(null)}
-                />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -1345,12 +1337,6 @@ export function PHPEmotionalAnalyticsPage() {
                   filter: "brightness(1.15)"
                 }}
               />
-              <Legend 
-                verticalAlign="top" 
-                height={36}
-                iconType="rect"
-                wrapperStyle={{ fontSize: '12px', color: '#9CA3AF', paddingBottom: '20px' }}
-              />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -1444,9 +1430,9 @@ export function PHPEmotionalAnalyticsPage() {
               <Brain className="h-5 w-5 text-indigo-400" />
               PHP Assessment Agent
             </CardTitle>
-            <CardDescription className="text-gray-400">
+            <p className="text-gray-400">
               Ask questions about patient assessments, emotional patterns, and treatment outcomes
-            </CardDescription>
+            </p>
           </CardHeader>
           <CardContent>
             <PHPAssessmentAgent 
