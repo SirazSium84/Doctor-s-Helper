@@ -543,20 +543,7 @@ export function WelcomePage() {
 
         {/* AI Chat Section - Separate full-width section */}
         <div className="mt-8">
-          <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border-gray-600/40 hover:shadow-2xl transition-all duration-300">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Brain className="h-5 w-5 text-blue-400" />
-                AI Healthcare Analytics Assistant
-              </CardTitle>
-              <CardDescription className="text-gray-400">
-                Interact with AI for clinical insights, patient analysis, and data visualization
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <OpenAIChat />
-            </CardContent>
-          </Card>
+          <OpenAIChat />
         </div>
 
         {/* Debug Panel - Development only */}
