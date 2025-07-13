@@ -30,6 +30,12 @@ def create_heatlhcare_mcp():
         version=mcp_config.version,
         stateless_http=True,
     )
+    
+    # Add health check endpoint
+    @mcp.app.get("/health")
+    def health_check():
+        return {"status": "healthy", "server": mcp_config.name, "version": mcp_config.version}
+    
     mcp = create_assessment_tools(mcp)
     mcp = create_substance_tools(mcp)
     mcp = create_analytics_tools(mcp)
