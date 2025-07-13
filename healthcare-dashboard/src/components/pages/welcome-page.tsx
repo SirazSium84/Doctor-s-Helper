@@ -183,9 +183,9 @@ export function WelcomePage() {
 
 
         {/* Enhanced Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-blue-900/50 to-indigo-900/50 ring-1 ring-blue-700/50 hover:ring-blue-600/60">
-            <CardContent className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+          <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-blue-900/50 to-indigo-900/50 ring-1 ring-blue-700/50 hover:ring-blue-600/60 h-full flex flex-col justify-center">
+            <CardContent className="flex-1 flex flex-col justify-center p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-blue-600/20 rounded-xl group-hover:bg-blue-600/30 transition-colors">
@@ -207,8 +207,8 @@ export function WelcomePage() {
             </CardContent>
           </Card>
 
-          <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-emerald-900/50 to-green-900/50 ring-1 ring-emerald-700/50 hover:ring-emerald-600/60">
-            <CardContent className="p-6">
+          <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-emerald-900/50 to-green-900/50 ring-1 ring-emerald-700/50 hover:ring-emerald-600/60 h-full flex flex-col justify-center">
+            <CardContent className="flex-1 flex flex-col justify-center p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-emerald-600/20 rounded-xl group-hover:bg-emerald-600/30 transition-colors">
@@ -230,8 +230,8 @@ export function WelcomePage() {
             </CardContent>
           </Card>
 
-          <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-amber-900/50 to-orange-900/50 ring-1 ring-amber-700/50 hover:ring-amber-600/60">
-            <CardContent className="p-6">
+          <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-amber-900/50 to-orange-900/50 ring-1 ring-amber-700/50 hover:ring-amber-600/60 h-full flex flex-col justify-center">
+            <CardContent className="flex-1 flex flex-col justify-center p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-amber-600/20 rounded-xl group-hover:bg-amber-600/30 transition-colors">
@@ -253,8 +253,8 @@ export function WelcomePage() {
             </CardContent>
           </Card>
 
-          <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-red-900/50 to-rose-900/50 ring-1 ring-red-700/50 hover:ring-red-600/60">
-            <CardContent className="p-6">
+          <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-red-900/50 to-rose-900/50 ring-1 ring-red-700/50 hover:ring-red-600/60 h-full flex flex-col justify-center">
+            <CardContent className="flex-1 flex flex-col justify-center p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-red-600/20 rounded-xl group-hover:bg-red-600/30 transition-colors">
@@ -280,7 +280,7 @@ export function WelcomePage() {
         {/* Charts Row - 3 columns */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {/* Program Distribution */}
-              <Card className="bg-gray-800 border-gray-700 hover:shadow-2xl transition-all duration-300">
+              <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border-gray-600/40 hover:shadow-2xl transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
                     <Brain className="h-5 w-5 text-blue-400" />
@@ -373,7 +373,7 @@ export function WelcomePage() {
               </Card>
 
               {/* Discharge Type Distribution */}
-              <Card className="bg-gray-800 border-gray-700 hover:shadow-2xl transition-all duration-300">
+              <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border-gray-600/40 hover:shadow-2xl transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
                     <Target className="h-5 w-5 text-purple-400" />
@@ -508,7 +508,7 @@ export function WelcomePage() {
               </Card>
 
           {/* Patient Motivations Wordcloud */}
-          <Card className="bg-gray-800 border-gray-700 hover:shadow-2xl transition-all duration-300">
+          <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border-gray-600/40 hover:shadow-2xl transition-all duration-300">
             <CardHeader>
               <div>
                 <CardTitle className="flex items-center gap-2 text-white">
@@ -543,7 +543,7 @@ export function WelcomePage() {
 
         {/* AI Chat Section - Separate full-width section */}
         <div className="mt-8">
-          <Card className="bg-gray-800 border-gray-700 shadow-2xl">
+          <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border-gray-600/40 hover:shadow-2xl transition-all duration-300">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-white">
                 <Brain className="h-5 w-5 text-blue-400" />

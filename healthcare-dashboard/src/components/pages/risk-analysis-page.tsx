@@ -116,7 +116,7 @@ export function RiskAnalysisPage() {
   return (
     <div className="space-y-8 animate-in fade-in-0 duration-700" style={{ willChange: 'opacity' }}>
       {/* Header Card */}
-      <Card className="bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 border border-gray-700/50 shadow-2xl">
+      <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border border-gray-600/40 backdrop-blur-sm">
         <CardHeader className="pb-6">
           {/* Top Section: Title and Controls */}
           <div className="flex items-start justify-between gap-8 mb-6">
@@ -209,7 +209,7 @@ export function RiskAnalysisPage() {
           </div>
           
           {/* Bottom Section: Key Metrics */}
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center p-4 bg-gradient-to-br from-blue-900/50 to-blue-800/30 rounded-xl border border-blue-700/30">
               <div className="text-3xl font-bold text-blue-400 mb-1">
                 {chartData.length}
@@ -240,7 +240,7 @@ export function RiskAnalysisPage() {
       </Card>
 
       {/* Main Chart */}
-      <Card className="bg-gray-800 border-gray-700">
+      <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border border-gray-600/40 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-white">
             {getAssessmentLabel(selectedAssessment)} Scores{" "}
@@ -428,7 +428,7 @@ export function RiskAnalysisPage() {
       {/* Risk Summary Cards */}
       {chartData.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border border-gray-600/40 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-300">Current Score</CardTitle>
               <CheckCircle className="h-4 w-4 text-blue-400" />
@@ -439,7 +439,7 @@ export function RiskAnalysisPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border border-gray-600/40 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-300">Risk Level</CardTitle>
               <AlertTriangle className="h-4 w-4 text-yellow-400" />
@@ -458,7 +458,7 @@ export function RiskAnalysisPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border border-gray-600/40 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-300">Change</CardTitle>
               {improvementMetrics?.isImproving ? (
@@ -479,7 +479,7 @@ export function RiskAnalysisPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border border-gray-600/40 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-300">Assessments</CardTitle>
               <CheckCircle className="h-4 w-4 text-blue-400" />
@@ -493,9 +493,11 @@ export function RiskAnalysisPage() {
       )}
 
       {/* Assessment Scale Reference */}
-      <Card className="bg-gray-800 border-gray-700">
+      <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border border-gray-600/40 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-white">{getAssessmentLabel(selectedAssessment)} Scale Reference</CardTitle>
+          <CardTitle className="text-white">
+            {getAssessmentLabel(selectedAssessment)} Scale Reference
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

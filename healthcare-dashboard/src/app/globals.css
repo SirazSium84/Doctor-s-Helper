@@ -112,35 +112,112 @@
   --sidebar-ring: #3b82f6;
 }
 
+/* --- Custom Navy and Gold Color Utilities --- */
+:root {
+  --navy-100: #e6eaf3;
+  --navy-200: #c2cbe0;
+  --navy-300: #8a9ac2;
+  --navy-400: #4b5a7a;
+  --navy-500: #22305a;
+  --navy-600: #1a2544;
+  --navy-700: #151d36;
+  --navy-800: #101627;
+  --navy-900: #0b0f1a;
+  --gold-100: #fff9e6;
+  --gold-200: #fce9b6;
+  --gold-300: #f8d477;
+  --gold-400: #f3c14a;
+  --gold-500: #eab308;
+  --gold-600: #c79a06;
+  --gold-700: #a37d04;
+  --gold-800: #7a5d02;
+  --gold-900: #4d3a01;
+}
+
+.text-navy-100 { color: var(--navy-100); }
+.text-navy-200 { color: var(--navy-200); }
+.text-navy-300 { color: var(--navy-300); }
+.text-navy-400 { color: var(--navy-400); }
+.text-navy-500 { color: var(--navy-500); }
+.text-navy-600 { color: var(--navy-600); }
+.text-navy-700 { color: var(--navy-700); }
+.text-navy-800 { color: var(--navy-800); }
+.text-navy-900 { color: var(--navy-900); }
+.bg-navy-100 { background-color: var(--navy-100); }
+.bg-navy-200 { background-color: var(--navy-200); }
+.bg-navy-300 { background-color: var(--navy-300); }
+.bg-navy-400 { background-color: var(--navy-400); }
+.bg-navy-500 { background-color: var(--navy-500); }
+.bg-navy-600 { background-color: var(--navy-600); }
+.bg-navy-700 { background-color: var(--navy-700); }
+.bg-navy-800 { background-color: var(--navy-800); }
+.bg-navy-900 { background-color: var(--navy-900); }
+.border-navy-100 { border-color: var(--navy-100); }
+.border-navy-200 { border-color: var(--navy-200); }
+.border-navy-300 { border-color: var(--navy-300); }
+.border-navy-400 { border-color: var(--navy-400); }
+.border-navy-500 { border-color: var(--navy-500); }
+.border-navy-600 { border-color: var(--navy-600); }
+.border-navy-700 { border-color: var(--navy-700); }
+.border-navy-800 { border-color: var(--navy-800); }
+.border-navy-900 { border-color: var(--navy-900); }
+.text-gold-100 { color: var(--gold-100); }
+.text-gold-200 { color: var(--gold-200); }
+.text-gold-300 { color: var(--gold-300); }
+.text-gold-400 { color: var(--gold-400); }
+.text-gold-500 { color: var(--gold-500); }
+.text-gold-600 { color: var(--gold-600); }
+.text-gold-700 { color: var(--gold-700); }
+.text-gold-800 { color: var(--gold-800); }
+.text-gold-900 { color: var(--gold-900); }
+.bg-gold-100 { background-color: var(--gold-100); }
+.bg-gold-200 { background-color: var(--gold-200); }
+.bg-gold-300 { background-color: var(--gold-300); }
+.bg-gold-400 { background-color: var(--gold-400); }
+.bg-gold-500 { background-color: var(--gold-500); }
+.bg-gold-600 { background-color: var(--gold-600); }
+.bg-gold-700 { background-color: var(--gold-700); }
+.bg-gold-800 { background-color: var(--gold-800); }
+.bg-gold-900 { background-color: var(--gold-900); }
+.border-gold-100 { border-color: var(--gold-100); }
+.border-gold-200 { border-color: var(--gold-200); }
+.border-gold-300 { border-color: var(--gold-300); }
+.border-gold-400 { border-color: var(--gold-400); }
+.border-gold-500 { border-color: var(--gold-500); }
+.border-gold-600 { border-color: var(--gold-600); }
+.border-gold-700 { border-color: var(--gold-700); }
+.border-gold-800 { border-color: var(--gold-800); }
+.border-gold-900 { border-color: var(--gold-900); }
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground font-sans text-base leading-relaxed;
+    @apply bg-gradient-to-br from-slate-900 via-gray-900 to-zinc-900 text-foreground font-sans text-base leading-relaxed;
     font-family: 'Inter', 'Geist', 'Open Sans', 'Segoe UI', Arial, sans-serif;
     letter-spacing: 0.01em;
   }
   h1, .text-4xl {
-    @apply text-4xl font-bold leading-tight mt-8 mb-4 tracking-tight;
+    @apply text-4xl font-bold leading-tight mt-8 mb-4 tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent;
   }
   h2, .text-3xl {
-    @apply text-3xl font-semibold leading-snug mt-8 mb-4 tracking-tight;
+    @apply text-3xl font-semibold leading-snug mt-8 mb-4 tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent;
   }
   h3, .text-2xl {
-    @apply text-2xl font-semibold leading-snug mt-6 mb-3 tracking-tight;
+    @apply text-2xl font-semibold leading-snug mt-6 mb-3 tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent;
   }
   h4, .text-xl {
-    @apply text-xl font-medium leading-snug mt-6 mb-2 tracking-tight;
+    @apply text-xl font-medium leading-snug mt-6 mb-2 tracking-tight text-white;
   }
   h5, .text-lg {
-    @apply text-lg font-medium leading-snug mt-4 mb-2 tracking-tight;
+    @apply text-lg font-medium leading-snug mt-4 mb-2 tracking-tight text-white;
   }
   h6, .text-base {
-    @apply text-base font-medium leading-snug mt-4 mb-2 tracking-tight;
+    @apply text-base font-medium leading-snug mt-4 mb-2 tracking-tight text-white;
   }
   p {
-    @apply mb-3 text-base leading-relaxed text-gray-600 dark:text-gray-300;
+    @apply mb-3 text-base leading-relaxed text-gray-400;
   }
   .card, .bg-card {
     @apply rounded-xl shadow-lg p-6 mb-6;

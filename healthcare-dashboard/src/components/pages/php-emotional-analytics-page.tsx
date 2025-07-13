@@ -1006,7 +1006,7 @@ export function PHPEmotionalAnalyticsPage() {
       {/* Charts Grid - Restructured based on real insights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Program Progression */}
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 border border-gray-600/40 shadow-2xl backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
               <TrendingUp className="h-5 w-5 text-blue-400" />
@@ -1052,7 +1052,7 @@ export function PHPEmotionalAnalyticsPage() {
         </Card>
 
         {/* Emotional State Distribution (Real Frequencies) */}
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 border border-gray-600/40 shadow-2xl backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
               <Target className="h-5 w-5 text-purple-400" />
@@ -1161,7 +1161,7 @@ export function PHPEmotionalAnalyticsPage() {
         </Card>
 
         {/* Top Coping Strategies */}
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 border border-gray-600/40 shadow-2xl backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
               <Shield className="h-5 w-5 text-green-400" />
@@ -1209,7 +1209,7 @@ export function PHPEmotionalAnalyticsPage() {
         </Card>
 
         {/* Patient Engagement Overview */}
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 border border-gray-600/40 shadow-2xl backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
               <Clock className="h-5 w-5 text-amber-400" />
@@ -1248,7 +1248,7 @@ export function PHPEmotionalAnalyticsPage() {
       </div>
 
       {/* Monthly Assessment Volume and Quality */}
-      <Card className="bg-gray-800 border-gray-700">
+      <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 border border-gray-600/40 shadow-2xl backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
             <Activity className="h-5 w-5 text-indigo-400" />
@@ -1358,7 +1358,7 @@ export function PHPEmotionalAnalyticsPage() {
 
       {/* Text Data Insights & Clinical Notes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 border border-gray-600/40 shadow-2xl backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
               <MessageSquare className="h-5 w-5 text-blue-400" />
@@ -1438,7 +1438,7 @@ export function PHPEmotionalAnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 border border-gray-600/40 shadow-2xl backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
               <Brain className="h-5 w-5 text-indigo-400" />

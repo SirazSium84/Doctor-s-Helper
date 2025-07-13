@@ -198,7 +198,7 @@ export function SpiderChartPage() {
   return (
     <div className="space-y-8 animate-in fade-in-0 duration-700" style={{ willChange: 'opacity' }}>
       {/* Header Card */}
-      <Card className="bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 border border-gray-700/50 shadow-2xl">
+      <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 border border-gray-600/40 shadow-2xl">
         <CardHeader className="pb-6">
           {/* Top Section: Title and Controls */}
           <div className="flex items-start justify-between gap-8 mb-6">
@@ -261,7 +261,7 @@ export function SpiderChartPage() {
           </div>
           
           {/* Bottom Section: Key Metrics */}
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center p-4 bg-gradient-to-br from-blue-900/50 to-blue-800/30 rounded-xl border border-blue-700/30">
               <div className="text-3xl font-bold text-blue-400 mb-1">
                 {chartData.length}
@@ -286,7 +286,7 @@ export function SpiderChartPage() {
       </Card>
 
       {/* Main Chart Card */}
-      <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700/50 shadow-2xl">
+      <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 border border-gray-600/40 shadow-2xl">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
