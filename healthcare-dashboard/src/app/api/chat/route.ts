@@ -803,20 +803,39 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
                 
                 // Define functions to get scores and historical data
                 const getLatestScore = (assessmentType: string) => {
+                  // First try to get from risk domains
                   if (riskResult.success && riskResult.data) {
                     const riskData = riskResult.data.structuredContent || riskResult.data
                     const riskDomains = riskData.risk_domains
                     if (riskDomains) {
+                      let score = 0
                       switch (assessmentType) {
-                        case 'ptsd': return riskDomains.ptsd?.total_score || 0
-                        case 'phq': return riskDomains.depression?.total_score || 0
-                        case 'gad': return riskDomains.anxiety?.total_score || 0
-                        case 'who': return riskDomains.wellbeing?.total_score || 0
-                        case 'ders': return riskDomains.emotion_regulation?.total_score || 0
-                        default: return 0
+                        case 'ptsd': score = riskDomains.ptsd?.total_score || 0; break
+                        case 'phq': score = riskDomains.depression?.total_score || 0; break
+                        case 'gad': score = riskDomains.anxiety?.total_score || 0; break
+                        case 'who': score = riskDomains.wellbeing?.total_score || 0; break
+                        case 'ders': score = riskDomains.emotion_regulation?.total_score || 0; break
+                        default: score = 0
                       }
+                      
+                      // If score exists in risk domains, use it
+                      if (score > 0) return score
                     }
                   }
+                  
+                  // Fallback: get latest score from assessment breakdown
+                  const assessments = data.assessment_breakdown?.[assessmentType]?.assessments || []
+                  if (assessments.length > 0) {
+                    // Sort by date to get the most recent
+                    const sortedAssessments = assessments
+                      .filter(a => a.assessment_date && a.assessment_date.trim() !== '')
+                      .sort((a, b) => new Date(b.assessment_date).getTime() - new Date(a.assessment_date).getTime())
+                    
+                    if (sortedAssessments.length > 0) {
+                      return sortedAssessments[0].calculated_total || sortedAssessments[0].total_score || 0
+                    }
+                  }
+                  
                   return 0
                 }
 

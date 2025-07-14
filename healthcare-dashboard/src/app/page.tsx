@@ -152,12 +152,12 @@ export default function Dashboard() {
       <Header />
       <NavigationTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <div className="container mx-auto px-6 py-6">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-9xl">
         {isLoading && (
-          <div className="mb-6 p-4 bg-gray-800 border border-gray-600 rounded-lg">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-800 border border-gray-600 rounded-lg">
             <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-              <p className="text-gray-300">{loadingStatus}</p>
+              <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-blue-500"></div>
+              <p className="text-sm sm:text-base text-gray-300">{loadingStatus}</p>
             </div>
           </div>
         )}

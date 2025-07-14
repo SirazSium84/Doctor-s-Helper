@@ -131,14 +131,14 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
   }
 
   const renderAssessmentTable = (data: AssessmentData[]) => (
-    <div className="mt-4 mb-4 bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 border border-gray-700/50 shadow-2xl overflow-hidden rounded-lg max-w-full">
-      <div className="bg-gray-700/50 px-3 py-2 border-b border-gray-600/50">
-        <h3 className="text-xs font-semibold text-blue-400 flex items-center gap-1">
+    <div className="mt-3 sm:mt-4 mb-3 sm:mb-4 bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 border border-gray-700/50 shadow-2xl overflow-hidden rounded-lg max-w-full">
+      <div className="bg-gray-700/50 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-gray-600/50">
+        <h3 className="text-xs sm:text-sm font-semibold text-blue-400 flex items-center gap-1">
           📊 Assessment Summary
         </h3>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-xs min-w-full">
+        <table className="w-full text-xs sm:text-sm min-w-full">
           <thead className="bg-gray-700/30 border-b border-gray-600/50">
             <tr>
               <th className="text-left px-2 py-1.5 text-gray-300 font-medium text-xs w-1/4">Domain</th>
@@ -206,7 +206,7 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
         </h3>
       </div>
       <div className="p-3">
-        <div className="h-96 w-full">
+        <div className="h-80 sm:h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart 
               data={data} 
@@ -311,7 +311,7 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
         </h3>
       </div>
       <div className="p-3">
-        <div className="h-96 w-full">
+        <div className="h-80 sm:h-96 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <defs>
@@ -414,15 +414,15 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
           </h3>
         </div>
         <div className="p-3">
-          <div className="max-h-96 overflow-y-auto">
-            <div className="space-y-4">
+          <div className="max-h-80 sm:max-h-96 overflow-y-auto">
+            <div className="space-y-3 sm:space-y-4">
               {sortedDates.map((date, dateIndex) => (
                 <div key={dateIndex} className="border border-gray-600/40 rounded-lg overflow-hidden bg-gray-750/30">
                   {/* Date Header */}
-                  <div className="bg-gray-700/40 px-3 py-2 border-b border-gray-600/30">
+                  <div className="bg-gray-700/40 px-2 sm:px-3 py-1.5 sm:py-2 border-b border-gray-600/30">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                      <span className="text-sm font-semibold text-gray-200">{date}</span>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-200">{date}</span>
                       <span className="text-xs text-gray-400">({groupedByDate[date].length} assessments)</span>
                     </div>
                   </div>
@@ -437,9 +437,6 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-mono bg-gray-600/50 px-2 py-0.5 rounded text-blue-200 font-medium">
                             Score: {entry.score !== undefined ? entry.score : (entry.value !== undefined ? entry.value : 'N/A')}
-                          </span>
-                          <span className="text-xs text-gray-400 bg-gray-600/30 px-1.5 py-0.5 rounded">
-                            {entry.type?.toUpperCase()}
                           </span>
                         </div>
                       </div>
@@ -480,7 +477,7 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
           </h3>
         </div>
         <div className="p-3">
-          <div className="h-96 w-full">
+          <div className="h-80 sm:h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={trendChartData} 

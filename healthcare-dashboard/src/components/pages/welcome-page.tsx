@@ -179,13 +179,13 @@ export function WelcomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <div className="p-8 space-y-8 max-w-[1600px] mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-screen-2xl mx-auto">
 
 
         {/* Enhanced Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 items-stretch">
           <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-blue-900/50 to-indigo-900/50 ring-1 ring-blue-700/50 hover:ring-blue-600/60 h-full flex flex-col justify-center">
-            <CardContent className="flex-1 flex flex-col justify-center p-6">
+            <CardContent className="flex-1 flex flex-col justify-center p-4 sm:p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-blue-600/20 rounded-xl group-hover:bg-blue-600/30 transition-colors">
@@ -208,7 +208,7 @@ export function WelcomePage() {
           </Card>
 
           <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-emerald-900/50 to-green-900/50 ring-1 ring-emerald-700/50 hover:ring-emerald-600/60 h-full flex flex-col justify-center">
-            <CardContent className="flex-1 flex flex-col justify-center p-6">
+            <CardContent className="flex-1 flex flex-col justify-center p-4 sm:p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-emerald-600/20 rounded-xl group-hover:bg-emerald-600/30 transition-colors">
@@ -231,7 +231,7 @@ export function WelcomePage() {
           </Card>
 
           <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-amber-900/50 to-orange-900/50 ring-1 ring-amber-700/50 hover:ring-amber-600/60 h-full flex flex-col justify-center">
-            <CardContent className="flex-1 flex flex-col justify-center p-6">
+            <CardContent className="flex-1 flex flex-col justify-center p-4 sm:p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-amber-600/20 rounded-xl group-hover:bg-amber-600/30 transition-colors">
@@ -254,7 +254,7 @@ export function WelcomePage() {
           </Card>
 
           <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-red-900/50 to-rose-900/50 ring-1 ring-red-700/50 hover:ring-red-600/60 h-full flex flex-col justify-center">
-            <CardContent className="flex-1 flex flex-col justify-center p-6">
+            <CardContent className="flex-1 flex flex-col justify-center p-4 sm:p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-red-600/20 rounded-xl group-hover:bg-red-600/30 transition-colors">
@@ -278,7 +278,7 @@ export function WelcomePage() {
         </div>
 
         {/* Charts Row - 3 columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 1.5xl:grid-cols-3 gap-4 sm:gap-6">
               {/* Program Distribution */}
               <Card className="bg-gradient-to-br from-slate-800/60 to-gray-800/60 shadow-2xl border-gray-600/40 hover:shadow-2xl transition-all duration-300">
                 <CardHeader>
@@ -289,7 +289,7 @@ export function WelcomePage() {
                   <CardDescription className="text-gray-400">Distribution of patients across treatment programs</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[320px]">
+                  <div className="h-[280px] sm:h-[320px] lg:h-[350px]">
                     <ResponsiveContainer width="100%" height="100%">
                                              <BarChart 
                          data={programChartData}
@@ -382,7 +382,7 @@ export function WelcomePage() {
                   <CardDescription className="text-gray-400">Current patient outcomes and status overview</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[320px]">
+                  <div className="h-[280px] sm:h-[320px] lg:h-[350px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <defs>
@@ -542,7 +542,7 @@ export function WelcomePage() {
         </div>
 
         {/* AI Chat Section - Separate full-width section */}
-        <div className="mt-8">
+        <div className="mt-6 sm:mt-8">
           <OpenAIChat />
         </div>
 
