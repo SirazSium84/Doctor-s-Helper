@@ -49,6 +49,10 @@ const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#0
 export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
   // Parse structured data from content
   const parseStructuredData = (text: string) => {
+    console.log('🔍 Debug - Full text content length:', text.length);
+    console.log('🔍 Debug - Text contains TREND_DATA:', text.includes('[TREND_DATA]'));
+    console.log('🔍 Debug - Text sample:', text.substring(Math.max(0, text.length - 500)));
+    
     const structuredData = {
       assessmentTable: null as AssessmentData[] | null,
       chartData: null as ChartData[] | null,
@@ -61,10 +65,12 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
     const assessmentMatch = text.match(/\[ASSESSMENT_TABLE\]([\s\S]*?)\[\/ASSESSMENT_TABLE\]/)
     if (assessmentMatch) {
       try {
+        console.log('🔍 Debug - Assessment table JSON:', assessmentMatch[1])
         structuredData.assessmentTable = JSON.parse(assessmentMatch[1])
         structuredData.plainText = text.replace(assessmentMatch[0], '')
       } catch (e) {
         console.error('Failed to parse assessment table:', e)
+        console.error('Assessment table content:', assessmentMatch[1])
       }
     }
 
@@ -72,10 +78,12 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
     const chartMatch = text.match(/\[CHART_DATA\]([\s\S]*?)\[\/CHART_DATA\]/)
     if (chartMatch) {
       try {
+        console.log('🔍 Debug - Chart data JSON:', chartMatch[1])
         structuredData.chartData = JSON.parse(chartMatch[1])
         structuredData.plainText = structuredData.plainText.replace(chartMatch[0], '')
       } catch (e) {
         console.error('Failed to parse chart data:', e)
+        console.error('Chart data content:', chartMatch[1])
       }
     }
 
@@ -83,21 +91,39 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
     const timelineMatch = text.match(/\[TIMELINE_DATA\]([\s\S]*?)\[\/TIMELINE_DATA\]/)
     if (timelineMatch) {
       try {
+        console.log('🔍 Debug - Timeline data JSON:', timelineMatch[1])
         structuredData.timelineData = JSON.parse(timelineMatch[1])
         structuredData.plainText = structuredData.plainText.replace(timelineMatch[0], '')
       } catch (e) {
         console.error('Failed to parse timeline data:', e)
+        console.error('Timeline data content:', timelineMatch[1])
       }
     }
 
     // Parse trend data - using multiline flag instead of 's' flag for compatibility
+    console.log('🔍 Debug - Searching for TREND_DATA in text...');
+    console.log('🔍 Debug - Text includes [TREND_DATA]:', text.includes('[TREND_DATA]'));
+    console.log('🔍 Debug - Text includes [/TREND_DATA]:', text.includes('[/TREND_DATA]'));
+    
+    if (text.includes('[TREND_DATA]')) {
+      const startIndex = text.indexOf('[TREND_DATA]');
+      const endIndex = text.indexOf('[/TREND_DATA]');
+      console.log('🔍 Debug - TREND_DATA start index:', startIndex);
+      console.log('🔍 Debug - TREND_DATA end index:', endIndex);
+      console.log('🔍 Debug - TREND_DATA section:', text.substring(startIndex, endIndex + 13));
+    }
+    
     const trendMatch = text.match(/\[TREND_DATA\]([\s\S]*?)\[\/TREND_DATA\]/)
+    console.log('🔍 Debug - trendMatch found:', !!trendMatch);
     if (trendMatch) {
+      console.log('🔍 Debug - trendMatch content:', trendMatch[1].substring(0, 200) + '...');
       try {
         structuredData.trendData = JSON.parse(trendMatch[1])
+        console.log('🔍 Debug - Parsed trendData successfully:', Object.keys(structuredData.trendData));
         structuredData.plainText = structuredData.plainText.replace(trendMatch[0], '')
       } catch (e) {
         console.error('Failed to parse trend data:', e)
+        console.error('Trend data content:', trendMatch[1])
       }
     }
 
@@ -360,42 +386,79 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
     </div>
   )
 
-  const renderTimelineData = (data: any[]) => (
-    <div className="mt-4 mb-4 bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 border border-gray-700/50 shadow-2xl overflow-hidden rounded-lg max-w-full">
-      <div className="bg-gray-700/50 px-3 py-2 border-b border-gray-600/50">
-        <h3 className="text-xs font-semibold text-blue-400 flex items-center gap-1">
-          📅 Historical Assessment Timeline
-        </h3>
-      </div>
-      <div className="p-3">
-        <div className="max-h-96 overflow-y-auto">
-          <div className="space-y-2">
-            {data.map((entry, index) => (
-              <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-gray-700/30 border border-gray-600/30">
-                <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-200">{entry.domain}</span>
-                    <span className="text-xs text-gray-400">{entry.date}</span>
+  const renderTimelineData = (data: any[]) => {
+    console.log('🔍 Debug - Timeline data structure:', data);
+    console.log('🔍 Debug - First timeline entry:', data[0]);
+    
+    // Group data by date
+    const groupedByDate = data.reduce((acc: any, entry) => {
+      const date = entry.date
+      if (!acc[date]) {
+        acc[date] = []
+      }
+      acc[date].push(entry)
+      return acc
+    }, {})
+
+    // Sort dates in descending order (most recent first)
+    const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+    
+    console.log('🔍 Debug - Grouped by date:', groupedByDate);
+    console.log('🔍 Debug - Sample grouped entry:', Object.values(groupedByDate)[0]);
+
+    return (
+      <div className="mt-4 mb-4 bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 border border-gray-700/50 shadow-2xl overflow-hidden rounded-lg max-w-full">
+        <div className="bg-gray-700/50 px-3 py-2 border-b border-gray-600/50">
+          <h3 className="text-xs font-semibold text-blue-400 flex items-center gap-1">
+            📅 Historical Assessment Timeline
+          </h3>
+        </div>
+        <div className="p-3">
+          <div className="max-h-96 overflow-y-auto">
+            <div className="space-y-4">
+              {sortedDates.map((date, dateIndex) => (
+                <div key={dateIndex} className="border border-gray-600/40 rounded-lg overflow-hidden bg-gray-750/30">
+                  {/* Date Header */}
+                  <div className="bg-gray-700/40 px-3 py-2 border-b border-gray-600/30">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                      <span className="text-sm font-semibold text-gray-200">{date}</span>
+                      <span className="text-xs text-gray-400">({groupedByDate[date].length} assessments)</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs font-mono bg-gray-600/50 px-2 py-0.5 rounded text-blue-200">
-                      Score: {entry.score}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      {entry.type?.toUpperCase()}
-                    </span>
+                  
+                  {/* Assessment Cards for this date */}
+                  <div className="p-2 space-y-2">
+                    {groupedByDate[date].map((entry: any, entryIndex: number) => (
+                      <div key={entryIndex} className="flex items-center justify-between p-2 rounded bg-gray-700/20 border border-gray-600/20">
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-200">{entry.domain}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono bg-gray-600/50 px-2 py-0.5 rounded text-blue-200 font-medium">
+                            Score: {entry.score !== undefined ? entry.score : (entry.value !== undefined ? entry.value : 'N/A')}
+                          </span>
+                          <span className="text-xs text-gray-400 bg-gray-600/30 px-1.5 py-0.5 rounded">
+                            {entry.type?.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   const renderTrendData = (data: any) => {
+    console.log('🔍 Debug - renderTrendData called with:', data);
+    console.log('🔍 Debug - data is object:', typeof data === 'object');
+    console.log('🔍 Debug - data keys:', Object.keys(data));
+    
     const trendChartData = Object.entries(data).map(([key, value]: [string, any]) => ({
       name: key === 'ptsd' ? 'PTSD' : 
             key === 'phq' ? 'Depression' :
@@ -535,7 +598,9 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
   }
 
   const { assessmentTable, chartData, timelineData, trendData, plainText } = parseStructuredData(content)
-
+  console.log('🔍 Debug - trendData:', trendData);
+  console.log('🔍 Debug - trendData type:', typeof trendData);
+  console.log('🔍 Debug - trendData keys:', trendData ? Object.keys(trendData) : 'null');
   return (
     <div className="prose prose-sm prose-invert max-w-none">
       {/* Render formatted text */}
@@ -555,7 +620,10 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
       {timelineData && timelineData.length > 0 && renderTimelineData(timelineData)}
       
       {/* Render trend data if present */}
-      {trendData && renderTrendData(trendData)}
+      {trendData && (() => {
+        console.log('🔍 Debug - Rendering trend data!', trendData);
+        return renderTrendData(trendData);
+      })()}
     </div>
   )
 }

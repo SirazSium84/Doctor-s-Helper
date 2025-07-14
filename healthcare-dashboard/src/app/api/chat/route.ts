@@ -197,6 +197,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model: openai("gpt-4o"),
       messages,
+      maxTokens: 4000, // Increase token limit to avoid truncation of trend data
       maxSteps: 5, // Allow multiple steps for tool calls + text generation
       onStepFinish: async (step) => {
         console.log(`📋 Step ${step.stepType} finished:`, {
@@ -762,13 +763,29 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
               // Attempt to get real patient assessments and risk data
               console.log(`🔍 Debug: Attempting to get assessments for ${patient_id}`)
               const assessmentResult = await serverMcpClient.getPatientAssessments(patient_id)
+              console.log(`🔍 Debug: Assessment result:`, JSON.stringify(assessmentResult, null, 2))
               console.log(`🔍 Debug: Assessment result success: ${assessmentResult.success}`)
-              
+              if (assessmentResult.data) {
+                console.log(`🔍 Debug: Assessment result data keys:`, Object.keys(assessmentResult.data))
+                if (assessmentResult.data.assessment_breakdown) {
+                  console.log(`🔍 Debug: assessment_breakdown keys:`, Object.keys(assessmentResult.data.assessment_breakdown))
+                  for (const key of Object.keys(assessmentResult.data.assessment_breakdown)) {
+                    const ab = assessmentResult.data.assessment_breakdown[key]
+                    if (ab && ab.assessments) {
+                      console.log(`🔍 Debug: ${key} assessments count:`, ab.assessments.length)
+                      if (ab.assessments.length > 0) {
+                        console.log(`🔍 Debug: First ${key} assessment:`, JSON.stringify(ab.assessments[0], null, 2))
+                      }
+                    }
+                  }
+                }
+              }
               const riskResult = await serverMcpClient.calculateCompositeRiskScore(patient_id)
+              console.log(`🔍 Debug: Risk result:`, JSON.stringify(riskResult, null, 2))
               console.log(`🔍 Debug: Risk result success: ${riskResult.success}`)
-              
               if (assessmentResult.success && assessmentResult.data) {
                 isRealData = true
+                console.log(`🔍 Debug: isRealData set to true`)
                 // The MCP data might be wrapped in structuredContent
                 const data = assessmentResult.data.structuredContent || assessmentResult.data
                 
@@ -984,7 +1001,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
                 ]
               }
             } catch (error) {
-              console.log(`Could not fetch real data for patient ${patient_id}, using demo data`)
+              console.log(`Could not fetch real data for patient ${patient_id}, using demo data. Error:`, error)
             }
           }
           
@@ -1058,14 +1075,28 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
 
 [ASSESSMENT_TABLE]${JSON.stringify(tableData)}[/ASSESSMENT_TABLE]`
 
+          // Add trend data immediately after assessment table to avoid truncation
+          if (timelineData.length > 0 && Object.keys(trendData).length > 0) {
+            response += `
+
+[TREND_DATA]${JSON.stringify(trendData)}[/TREND_DATA]`
+            console.log('🔍 Debug API - Added TREND_DATA section immediately after assessment table');
+          }
+
           if (include_chart) {
             response += `
 
 [CHART_DATA]${JSON.stringify(chartData)}[/CHART_DATA]`
           }
 
-          // Add historical data and trends for real data
-          if (isRealData && timelineData.length > 0) {
+          // Add historical data and trends for real data or if timelineData is available
+          console.log('🔍 Debug API - Before timeline check - timelineData.length:', timelineData.length);
+          console.log('🔍 Debug API - Before timeline check - trendData:', Object.keys(trendData));
+          console.log('🔍 Debug API - Before timeline check - isRealData:', isRealData);
+          
+          if (timelineData.length > 0) {
+            console.log('🔍 Debug API - Adding timeline data, length:', timelineData.length);
+            console.log('🔍 Debug API - trendData keys:', Object.keys(trendData));
             response += `
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1108,7 +1139,8 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
    • Assessments: ${trendData.ders?.assessmentCount || 0}
    • Date Range: ${trendData.ders?.dateRange || 'No data'}
 
-[TREND_DATA]${JSON.stringify(trendData)}[/TREND_DATA]`
+`
+            console.log('🔍 Debug API - Added text-based trend analysis (TREND_DATA already added earlier)');
           }
 
           response += `
