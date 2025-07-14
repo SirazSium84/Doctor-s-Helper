@@ -1118,14 +1118,10 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
             console.log('🔍 Debug API - trendData keys:', Object.keys(trendData));
             response += `
 
-================================================================================
-
-**HISTORICAL ASSESSMENT TIMELINE**
-
 [TIMELINE_DATA]${JSON.stringify(timelineData)}[/TIMELINE_DATA]
 
 `
-            console.log('🔍 Debug API - TREND_DATA JSON added for chart rendering (text analysis removed)');
+            console.log('🔍 Debug API - Timeline data added for rendering (header removed)');
           }
 
           response += `
