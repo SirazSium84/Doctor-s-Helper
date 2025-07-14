@@ -47,6 +47,25 @@ interface EnhancedMessageProps {
 const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4']
 
 export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
+  // Pre-filter content to hide any JSON blocks during streaming
+  const preFilterContent = (text: string) => {
+    // Hide any partial or complete JSON blocks immediately
+    return text
+      .replace(/\[ASSESSMENT_TABLE\][\s\S]*?(\[\/ASSESSMENT_TABLE\]|$)/g, (match) => {
+        // Only keep if it's a complete block, otherwise hide completely
+        return match.includes('[/ASSESSMENT_TABLE]') ? match : ''
+      })
+      .replace(/\[CHART_DATA\][\s\S]*?(\[\/CHART_DATA\]|$)/g, (match) => {
+        return match.includes('[/CHART_DATA]') ? match : ''
+      })
+      .replace(/\[TIMELINE_DATA\][\s\S]*?(\[\/TIMELINE_DATA\]|$)/g, (match) => {
+        return match.includes('[/TIMELINE_DATA]') ? match : ''
+      })
+      .replace(/\[TREND_DATA\][\s\S]*?(\[\/TREND_DATA\]|$)/g, (match) => {
+        return match.includes('[/TREND_DATA]') ? match : ''
+      })
+  }
+
   // Parse structured data from content
   const parseStructuredData = (text: string) => {
     console.log('🔍 Debug - Full text content length:', text.length);
@@ -578,19 +597,34 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
     )
   }
 
-  const renderFormattedText = (text: string) => (
-    <div className="leading-relaxed">
-      {text.split('\n').map((line, i) => (
-        <p key={i} className="mb-2 last:mb-0 text-sm">
-          {line.includes('**') ? (
-            line.split('**').map((part, j) => 
-              j % 2 === 1 ? <strong key={j} className="text-blue-400 font-semibold">{part}</strong> : part
-            )
-          ) : line}
-        </p>
-      ))}
-    </div>
-  )
+  const renderFormattedText = (text: string) => {
+    // Filter out any remaining JSON blocks that might not have been parsed
+    const cleanText = text
+      .replace(/\[ASSESSMENT_TABLE\][\s\S]*?\[\/ASSESSMENT_TABLE\]/g, '')
+      .replace(/\[CHART_DATA\][\s\S]*?\[\/CHART_DATA\]/g, '')
+      .replace(/\[TIMELINE_DATA\][\s\S]*?\[\/TIMELINE_DATA\]/g, '')
+      .replace(/\[TREND_DATA\][\s\S]*?\[\/TREND_DATA\]/g, '')
+      .trim()
+
+    // Don't render anything if only whitespace remains
+    if (!cleanText || cleanText.match(/^\s*$/)) {
+      return null
+    }
+
+    return (
+      <div className="leading-relaxed">
+        {cleanText.split('\n').map((line, i) => (
+          <p key={i} className="mb-2 last:mb-0 text-sm">
+            {line.includes('**') ? (
+              line.split('**').map((part, j) => 
+                j % 2 === 1 ? <strong key={j} className="text-blue-400 font-semibold">{part}</strong> : part
+              )
+            ) : line}
+          </p>
+        ))}
+      </div>
+    )
+  }
 
   if (role === 'user') {
     return (
@@ -600,7 +634,9 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
     )
   }
 
-  const { assessmentTable, chartData, timelineData, trendData, plainText } = parseStructuredData(content)
+  // Apply pre-filtering first to hide partial JSON blocks during streaming
+  const filteredContent = preFilterContent(content)
+  const { assessmentTable, chartData, timelineData, trendData, plainText } = parseStructuredData(filteredContent)
   console.log('🔍 Debug - trendData:', trendData);
   console.log('🔍 Debug - trendData type:', typeof trendData);
   console.log('🔍 Debug - trendData keys:', trendData ? Object.keys(trendData) : 'null');
