@@ -197,7 +197,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model: openai("gpt-4o"),
       messages,
-      maxTokens: 4000, // Increase token limit to avoid truncation of trend data
+      maxTokens: 8000, // Increase token limit to accommodate large timeline datasets
       maxSteps: 5, // Allow multiple steps for tool calls + text generation
       onStepFinish: async (step) => {
         console.log(`📋 Step ${step.stepType} finished:`, {
@@ -1094,12 +1094,14 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
 
 [ASSESSMENT_TABLE]${JSON.stringify(tableData)}[/ASSESSMENT_TABLE]`
 
-          // Add trend data immediately after assessment table to avoid truncation
+          // Add trend and timeline data immediately after assessment table to avoid truncation
           if (timelineData.length > 0 && Object.keys(trendData).length > 0) {
             response += `
 
-[TREND_DATA]${JSON.stringify(trendData)}[/TREND_DATA]`
-            console.log('🔍 Debug API - Added TREND_DATA section immediately after assessment table');
+[TREND_DATA]${JSON.stringify(trendData)}[/TREND_DATA]
+
+[TIMELINE_DATA]${JSON.stringify(timelineData)}[/TIMELINE_DATA]`
+            console.log('🔍 Debug API - Added TREND_DATA and TIMELINE_DATA sections immediately after assessment table');
           }
 
           if (include_chart) {
@@ -1113,16 +1115,8 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
           console.log('🔍 Debug API - Before timeline check - trendData:', Object.keys(trendData));
           console.log('🔍 Debug API - Before timeline check - isRealData:', isRealData);
           
-          if (timelineData.length > 0) {
-            console.log('🔍 Debug API - Adding timeline data, length:', timelineData.length);
-            console.log('🔍 Debug API - trendData keys:', Object.keys(trendData));
-            response += `
-
-[TIMELINE_DATA]${JSON.stringify(timelineData)}[/TIMELINE_DATA]
-
-`
-            console.log('🔍 Debug API - Timeline data added for rendering (header removed)');
-          }
+          // Timeline data is now added earlier with trend data to avoid truncation
+          console.log('🔍 Debug API - Timeline data already added earlier with TREND_DATA to avoid truncation');
 
           response += `
 

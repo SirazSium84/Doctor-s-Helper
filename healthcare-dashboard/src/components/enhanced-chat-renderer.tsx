@@ -88,16 +88,22 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
     }
 
     // Parse timeline data - using multiline flag instead of 's' flag for compatibility
+    console.log('🔍 Debug - Searching for TIMELINE_DATA in text...');
+    console.log('🔍 Debug - Text includes [TIMELINE_DATA]:', text.includes('[TIMELINE_DATA]'));
     const timelineMatch = text.match(/\[TIMELINE_DATA\]([\s\S]*?)\[\/TIMELINE_DATA\]/)
+    console.log('🔍 Debug - Timeline match found:', !!timelineMatch);
     if (timelineMatch) {
       try {
-        console.log('🔍 Debug - Timeline data JSON:', timelineMatch[1])
+        console.log('🔍 Debug - Timeline data JSON:', timelineMatch[1].substring(0, 200) + '...')
         structuredData.timelineData = JSON.parse(timelineMatch[1])
+        console.log('🔍 Debug - Parsed timeline data length:', structuredData.timelineData.length);
         structuredData.plainText = structuredData.plainText.replace(timelineMatch[0], '')
       } catch (e) {
         console.error('Failed to parse timeline data:', e)
         console.error('Timeline data content:', timelineMatch[1])
       }
+    } else {
+      console.log('🔍 Debug - No TIMELINE_DATA match found in text');
     }
 
     // Parse trend data - using multiline flag instead of 's' flag for compatibility
