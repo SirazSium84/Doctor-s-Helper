@@ -5,14 +5,14 @@ import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Send, Bot, User, Brain, Loader2 } from 'lucide-react'
+import { Send, User, Brain, Loader2, RotateCcw } from 'lucide-react'
 import { EnhancedChatRenderer } from './enhanced-chat-renderer'
 
 export function OpenAIChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error, setMessages } = useChat({
     api: '/api/chat',
     streamProtocol: 'text', // Use text stream protocol as fallback
     onError: (error) => {
@@ -52,13 +52,32 @@ export function OpenAIChat() {
     console.log('💬 Error state:', error)
   }, [messages, isLoading, error])
 
+  // Clear chat function
+  const clearChat = () => {
+    setMessages([])
+  }
+
   return (
     <Card className="bg-gray-800 border-gray-700 w-full h-fit">
       <CardHeader className="pb-4">
-        <CardTitle className="text-white flex items-center gap-2">
-          <Brain className="w-5 h-5 text-blue-400" />
-          AI Healthcare Analytics Assistant
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-white flex items-center gap-2">
+            <Brain className="w-5 h-5 text-blue-400" />
+            AI Healthcare Analytics Assistant
+          </CardTitle>
+          {messages.length > 0 && (
+            <Button
+              onClick={clearChat}
+              variant="outline"
+              size="sm"
+              className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-red-600/20 hover:border-red-500/50 hover:text-red-400 transition-all duration-200 shadow-sm hover:shadow-md"
+              disabled={isLoading}
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Clear Chat
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="pb-4">
         <div className="flex flex-col space-y-4">

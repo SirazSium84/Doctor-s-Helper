@@ -340,7 +340,7 @@ After calling any tool, you MUST provide detailed clinical interpretation
 **Assessment Focus:** [Specific condition analysis]
 **Date Range:** [Time period analyzed]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
 📊 **CLINICAL FINDINGS**
 
@@ -349,20 +349,20 @@ After calling any tool, you MUST provide detailed clinical interpretation
    • **Clinical Significance:** [Interpretation]
    • **Symptom Profile:** [Key symptoms observed]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
 📈 **TREND ANALYSIS**
    • **Trajectory:** [Improving/Declining/Stable]
    • **Notable Changes:** [Significant variations]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
 🎯 **CLINICAL RECOMMENDATIONS**
    1. **Immediate Actions:** [Urgent interventions needed]
    2. **Ongoing Treatment:** [Continued therapy recommendations]
    3. **Monitoring:** [Areas requiring close observation]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
 📋 **Note:** This focused analysis examined [condition]. For comprehensive multi-domain assessment, I can analyze all clinical instruments."
 
@@ -373,14 +373,14 @@ After calling any tool, you MUST provide detailed clinical interpretation
 **Assessment Date:** [Latest assessment date]  
 **Total Assessments Reviewed:** [Number]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
 🚨 **RISK STRATIFICATION**
 
 **Overall Risk Level:** [HIGH/MODERATE/LOW]
 **Composite Risk Score:** [Score/100]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
 📊 **MULTI-DOMAIN ASSESSMENT SUMMARY**
 
@@ -394,7 +394,7 @@ After calling any tool, you MUST provide detailed clinical interpretation
 
 💭 **Emotion Reg (DERS):** [Score]/180 → [Level] → [↑↓→] → Priority: [High/Med/Low]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
 🎯 **CLINICAL PRIORITIES**
 
@@ -407,7 +407,7 @@ After calling any tool, you MUST provide detailed clinical interpretation
 🟢 **LOW PRIORITY (Maintenance):**
    • [Stable areas requiring routine monitoring]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
 📋 **EVIDENCE-BASED RECOMMENDATIONS**
 
@@ -426,7 +426,7 @@ After calling any tool, you MUST provide detailed clinical interpretation
    2. [Functional improvement targets]
    3. [Relapse prevention strategies]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
 📈 **CLINICAL TRAJECTORY**
 
@@ -485,7 +485,7 @@ After calling any tool, you MUST provide detailed clinical interpretation
 **Use these formatting elements for professional clinical reports:**
 
 1. **Section Headers:** Use 🏥 **TITLE** format (no markdown headers)
-2. **Visual Separators:** Use ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ lines
+2. **Visual Separators:** Use ================================================================================ lines
 3. **Visual Indicators:** 
    - 🚨 For high priority/urgent items
    - 🔴 For high priority actions
@@ -1085,7 +1085,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
 **Data Source:** ${isRealData ? 'REAL CLINICAL DATA' : 'DEMONSTRATION DATA'}
 **Total Assessments Reviewed:** ${isRealData ? timelineData.length : '5'}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
 🚨 **RISK STRATIFICATION**
 
@@ -1118,57 +1118,23 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
             console.log('🔍 Debug API - trendData keys:', Object.keys(trendData));
             response += `
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
-📊 **HISTORICAL ASSESSMENT TIMELINE**
+**HISTORICAL ASSESSMENT TIMELINE**
 
 [TIMELINE_DATA]${JSON.stringify(timelineData)}[/TIMELINE_DATA]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📈 **TREND ANALYSIS**
-
-**PTSD (PCL-5):**
-   • Trend: ${trendData.ptsd?.direction || 'Unknown'} ${trendData.ptsd?.trend || '→'}
-   • Change: ${trendData.ptsd?.change || 0} points (${trendData.ptsd?.percentChange || 0}%)
-   • Assessments: ${trendData.ptsd?.assessmentCount || 0}
-   • Date Range: ${trendData.ptsd?.dateRange || 'No data'}
-
-**Depression (PHQ-9):**
-   • Trend: ${trendData.phq?.direction || 'Unknown'} ${trendData.phq?.trend || '→'}
-   • Change: ${trendData.phq?.change || 0} points (${trendData.phq?.percentChange || 0}%)
-   • Assessments: ${trendData.phq?.assessmentCount || 0}
-   • Date Range: ${trendData.phq?.dateRange || 'No data'}
-
-**Anxiety (GAD-7):**
-   • Trend: ${trendData.gad?.direction || 'Unknown'} ${trendData.gad?.trend || '→'}
-   • Change: ${trendData.gad?.change || 0} points (${trendData.gad?.percentChange || 0}%)
-   • Assessments: ${trendData.gad?.assessmentCount || 0}
-   • Date Range: ${trendData.gad?.dateRange || 'No data'}
-
-**Function (WHO-DAS):**
-   • Trend: ${trendData.who?.direction || 'Unknown'} ${trendData.who?.trend || '→'}
-   • Change: ${trendData.who?.change || 0} points (${trendData.who?.percentChange || 0}%)
-   • Assessments: ${trendData.who?.assessmentCount || 0}
-   • Date Range: ${trendData.who?.dateRange || 'No data'}
-
-**Emotion Regulation (DERS):**
-   • Trend: ${trendData.ders?.direction || 'Unknown'} ${trendData.ders?.trend || '→'}
-   • Change: ${trendData.ders?.change || 0} points (${trendData.ders?.percentChange || 0}%)
-   • Assessments: ${trendData.ders?.assessmentCount || 0}
-   • Date Range: ${trendData.ders?.dateRange || 'No data'}
-
 `
-            console.log('🔍 Debug API - Added text-based trend analysis (TREND_DATA already added earlier)');
+            console.log('🔍 Debug API - TREND_DATA JSON added for chart rendering (text analysis removed)');
           }
 
           response += `
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
-🎯 **CLINICAL PRIORITIES**
+**CLINICAL PRIORITIES**
 
-🔴 **HIGH PRIORITY (Immediate Attention):**`
+**HIGH PRIORITY (Immediate Attention):**`
 
           // Generate recommendations based on actual scores
           const highPriorityItems = tableData.filter(item => item.priority === "High")
@@ -1178,7 +1144,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
 
           response += `
 
-🟡 **MEDIUM PRIORITY (Active Monitoring):**`
+**MEDIUM PRIORITY (Active Monitoring):**`
 
           const mediumPriorityItems = tableData.filter(item => item.priority === "Medium")
           mediumPriorityItems.forEach(item => {
@@ -1187,7 +1153,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
 
           response += `
 
-🟢 **LOW PRIORITY (Maintenance):**`
+**LOW PRIORITY (Maintenance):**`
 
           const lowPriorityItems = tableData.filter(item => item.priority === "Low")
           lowPriorityItems.forEach(item => {
@@ -1196,9 +1162,9 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
 
           response += `
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
 
-📅 **CLINICAL RECOMMENDATIONS:**
+**CLINICAL RECOMMENDATIONS:**
    • **Immediate:** Priority interventions for high-severity assessments
    • **Short-term:** Increase therapy frequency for elevated scores
    • **Ongoing:** Regular monitoring of moderate-severity symptoms  
