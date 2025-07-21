@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Send, User, Brain, Loader2, RotateCcw } from 'lucide-react'
 import { EnhancedChatRenderer } from './enhanced-chat-renderer'
+import dynamic from 'next/dynamic';
 
 export function OpenAIChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -56,6 +57,9 @@ export function OpenAIChat() {
   const clearChat = () => {
     setMessages([])
   }
+
+  // Dynamically import the PDF button component (client-only)
+  const PatientSummaryPDFButton = dynamic(() => import('./PatientSummaryPDFButton'), { ssr: false });
 
   return (
     <Card className="bg-gray-800 border-gray-700 w-full h-fit">
@@ -138,6 +142,12 @@ export function OpenAIChat() {
                 </div>
               </div>
             ))}
+            {/* Download as PDF button for the latest assistant message */}
+            {messages.length > 0 && messages.filter(m => m.role === 'assistant').length > 0 && (
+              <div className="flex justify-end mt-4">
+                <PatientSummaryPDFButton summaryText={messages.filter(m => m.role === 'assistant').slice(-1)[0].content || ''} />
+              </div>
+            )}
             
             {isLoading && (
               <div className="flex items-start gap-3">

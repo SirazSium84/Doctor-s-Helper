@@ -1,39 +1,27 @@
 import { NextResponse } from 'next/server'
 import { comprehensiveDataService } from '@/lib/comprehensive-data-service'
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const patientId = searchParams.get('patientId')
+
+  if (!patientId) {
+    return NextResponse.json({
+      success: false,
+      error: 'Missing patientId query parameter. Use /api/debug?patientId=YOUR_ID'
+    }, { status: 400 })
+  }
+
   try {
-    console.log('🔍 Debug endpoint called - testing comprehensive data service')
-    
-    // Clear cache first
+    console.log(`🔍 Debug endpoint called for patientId: ${patientId}`)
     comprehensiveDataService.clearCache()
-    
-    // Load fresh data
-    const data = await comprehensiveDataService.loadAllData()
-    
-    console.log('📊 Debug data loaded:', {
-      patients: data.patients.length,
-      assessments: data.assessments.length,
-      substanceHistory: data.substanceHistory.length,
-      phpAssessments: data.phpAssessments.length,
-      bpsAssessments: data.bpsAssessments.length
-    })
-    
+    const assessments = await comprehensiveDataService.getPatientAssessments(patientId)
+    console.log('📊 Assessments for patient:', patientId, assessments)
     return NextResponse.json({
       success: true,
-      data: {
-        patients: data.patients.length,
-        assessments: data.assessments.length,
-        substanceHistory: data.substanceHistory.length,
-        phpAssessments: data.phpAssessments.length,
-        bpsAssessments: data.bpsAssessments.length,
-        samplePatients: data.patients.slice(0, 3).map(p => ({ id: p.id, name: p.name })),
-        sampleAssessments: data.assessments.slice(0, 3).map(a => ({ 
-          patientId: a.patientId, 
-          date: a.date, 
-          scores: { who: a.who, gad: a.gad, phq: a.phq, pcl: a.pcl, ders: a.ders }
-        }))
-      }
+      patientId,
+      assessmentCount: assessments.length,
+      assessments
     })
   } catch (error) {
     console.error('💥 Debug endpoint error:', error)

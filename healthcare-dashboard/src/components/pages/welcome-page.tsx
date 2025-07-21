@@ -50,6 +50,8 @@ export function WelcomePage() {
   // Helper function to get display name for discharge type - handle both old and new data formats
   const getDisplayName = (type: string) => {
     switch (type.toLowerCase()) {
+      case '0':
+        return 'Still Under Care'
       case 'ongoing':
       case 'current':
         return 'Currently Active'
@@ -77,6 +79,8 @@ export function WelcomePage() {
   // Professional gradient palette for discharge status with distinct colors
   const getDischargeGradient = (displayName: string) => {
     switch (displayName) {
+      case 'Still Under Care':
+        return 'url(#activeGradient)'      // Blue gradient - Still under care
       case 'Currently Active':
         return 'url(#activeGradient)'      // Blue gradient - Active patients
       case 'Successfully Completed':
@@ -99,6 +103,8 @@ export function WelcomePage() {
   // Keep the original function for legend colors
   const getDischargeColor = (displayName: string) => {
     switch (displayName) {
+      case 'Still Under Care':
+        return '#3B82F6'      // Blue - Still under care
       case 'Currently Active':
         return '#3B82F6'      // Blue - Active patients
       case 'Successfully Completed':

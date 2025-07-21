@@ -135,7 +135,7 @@ CREATE TABLE public.DERS_2 (
   ders2_q9_confused bigint,
   CONSTRAINT DERS_2_pkey PRIMARY KEY (unique_id)
 );
-CREATE TABLE public.GAD (
+CREATE TABLE public.GAD ( 
   unique_id text NOT NULL,
   group_identifier text,
   assessment_date text,
