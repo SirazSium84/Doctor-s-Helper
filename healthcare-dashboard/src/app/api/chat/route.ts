@@ -2,6 +2,7 @@ import { openai } from "@ai-sdk/openai"
 import { streamText, tool } from "ai"
 import { z } from "zod"
 import { mcpClient } from "@/lib/mcp-client"
+import { generateContextualRecommendations } from "@/lib/vectorize-recommendations"
 
 // Create a server-side MCP client that bypasses the API proxy
 class ServerMCPClient {
@@ -26,7 +27,7 @@ class ServerMCPClient {
         }
       }
 
-      console.log(`📡 Calling MCP server at: ${this.serverUrl}/mcp/`)
+      console.log(`📡 Calling MCP server at: ${this.serverUrl}/mcp/`);
       const response = await fetch(`${this.serverUrl}/mcp/`, {
         method: 'POST',
         headers: {
@@ -36,7 +37,7 @@ class ServerMCPClient {
         body: JSON.stringify(requestBody)
       })
 
-      console.log(`📡 MCP Response status: ${response.status}`)
+      console.log(`📡 MCP Response status: ${response.status}`);
       if (!response.ok) {
         console.error(`❌ MCP server error: ${response.status}: ${response.statusText}`)
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
@@ -493,31 +494,28 @@ Social Factors: [Key insights, including cultural considerations]
 
 ================================================================================
 
-📋 EVIDENCE-BASED RECOMMENDATIONS (Based on APA guidelines)
+📋 EVIDENCE-BASED CLINICAL RECOMMENDATIONS (From Vector Database)
+
+**IMPORTANT:** When generating clinical recommendations, ALWAYS call the get_clinical_recommendations tool first to retrieve evidence-based recommendations from the vector database. Use the returned recommendations to inform your clinical guidance.
+
+For patient-specific comprehensive reports, call:
+get_clinical_recommendations(patient_id, assessment_data, domains, severity_level)
 
 🎯 Immediate Interventions:
 
-[Specific therapeutic interventions]
+[Use recommendations from vector database - include source citations]
 
-[Medication considerations]
+🎯 Treatment Adjustments:
 
-[Safety planning if needed]
-
-⚙️ Treatment Adjustments:
-
-[Therapy modifications]
-
-[Frequency adjustments]
-
-[Referral considerations]
+[Use evidence-based recommendations with relevance scores]
 
 🎯 Long-term Goals:
 
-[Recovery objectives]
+[Use sourced recommendations with priority levels]
 
-[Functional improvement targets]
-
-[Relapse prevention strategies]
+**Format recommendations as:**
+• **[Title]** (Evidence Level: [A/B/C], Priority: [1-10], Source: [Citation])
+  [Description and specific guidance]
 
 ================================================================================
 
@@ -1183,15 +1181,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
 
 [ASSESSMENT_TABLE]${JSON.stringify(tableData)}[/ASSESSMENT_TABLE]`
 
-          // Add trend and timeline data immediately after assessment table to avoid truncation
-          if (timelineData.length > 0 && Object.keys(trendData).length > 0) {
-            response += `
-
-[TREND_DATA]${JSON.stringify(trendData)}[/TREND_DATA]
-
-[TIMELINE_DATA]${JSON.stringify(timelineData)}[/TIMELINE_DATA]`
-            console.log('🔍 Debug API - Added TREND_DATA and TIMELINE_DATA sections immediately after assessment table');
-          }
+          // Note: TREND_DATA and TIMELINE_DATA moved to end to prioritize clinical recommendations
 
           if (include_chart) {
             response += `
@@ -1243,12 +1233,116 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
 
 ================================================================================
 
-**CLINICAL RECOMMENDATIONS:**
+**EVIDENCE-BASED CLINICAL RECOMMENDATIONS (DSM-5):**`
+
+          // Generate evidence-based clinical recommendations from DSM-5 vector database
+          console.log('🎯 Generating DSM-5 clinical recommendations for comprehensive report...');
+          
+          try {
+            // Create assessment breakdown from tableData for DSM-5 recommendations
+            const assessmentBreakdown = {
+              ptsd: {
+                total_score: tableData.find(item => item.domain.includes('PTSD'))?.score || 0,
+                severity: tableData.find(item => item.domain.includes('PTSD'))?.severity || 'Mild',
+                interpretation: `${tableData.find(item => item.domain.includes('PTSD'))?.severity || 'Mild'} PTSD symptoms`
+              },
+              phq: {
+                total_score: tableData.find(item => item.domain.includes('Depression'))?.score || 0,
+                severity: tableData.find(item => item.domain.includes('Depression'))?.severity || 'Mild',
+                interpretation: `${tableData.find(item => item.domain.includes('Depression'))?.severity || 'Mild'} depression`
+              },
+              gad: {
+                total_score: tableData.find(item => item.domain.includes('Anxiety'))?.score || 0,
+                severity: tableData.find(item => item.domain.includes('Anxiety'))?.severity || 'Mild',
+                interpretation: `${tableData.find(item => item.domain.includes('Anxiety'))?.severity || 'Mild'} anxiety`
+              },
+              who: {
+                total_score: tableData.find(item => item.domain.includes('Functional'))?.score || 0,
+                severity: tableData.find(item => item.domain.includes('Functional'))?.severity || 'Mild',
+                interpretation: `${tableData.find(item => item.domain.includes('Functional'))?.severity || 'Mild'} functional impairment`
+              },
+              ders: {
+                total_score: tableData.find(item => item.domain.includes('Emotion'))?.score || 0,
+                severity: tableData.find(item => item.domain.includes('Emotion'))?.severity || 'Mild',
+                interpretation: `${tableData.find(item => item.domain.includes('Emotion'))?.severity || 'Mild'} emotion regulation difficulty`
+              }
+            };
+            
+            console.log('🔍 Assessment breakdown for DSM-5 search:', JSON.stringify(assessmentBreakdown, null, 2));
+
+            // Generate DSM-5 clinical recommendations from vector database
+            const clinicalRecommendations = await generateContextualRecommendations(assessmentBreakdown);
+            
+            if (clinicalRecommendations && clinicalRecommendations.length > 0) {
+              // Get priority domains from high priority items
+              const priorityDomains = tableData
+                .filter(item => item.priority === "High")
+                .map(item => item.domain.split('(')[0].trim().replace(' Checklist', '').replace(' Inventory', '').replace(' Scale', ''))
+                .slice(0, 2); // Limit to prevent long strings
+              
+              // Limit recommendations for PDF compatibility
+              const limitedRecommendations = clinicalRecommendations.slice(0, 3);
+              
+              limitedRecommendations.forEach((rec, index) => {
+                const relevancePercent = Math.round(rec.score * 100);
+                // Allow longer content for complete clinical recommendations
+                const shortTitle = rec.recommendation.title.substring(0, 100) + (rec.recommendation.title.length > 100 ? '...' : '');
+                const shortContent = rec.recommendation.content.substring(0, 300) + (rec.recommendation.content.length > 300 ? '...' : '');
+                
+                response += `
+   ${index + 1}. **${shortTitle}**
+      📋 Domain: ${rec.recommendation.domain} | Category: ${rec.recommendation.category}
+      📊 Clinical Relevance: ${relevancePercent}% | Source: DSM-5
+      📝 ${shortContent}`;
+              });
+              
+              response += `
+              
+💡 **Clinical Actions:**
+   • **Immediate:** Address ${priorityDomains.length > 0 ? priorityDomains.join(' and ') : 'high-priority'} symptoms based on DSM-5 criteria
+   • **Assessment:** Use structured diagnostic interviews per DSM-5 guidelines  
+   • **Treatment:** Implement evidence-based interventions as indicated above
+   • **Monitoring:** Track symptom changes using validated assessment tools
+   • **Follow-up:** Regular reassessment per clinical severity and treatment response`;
+            } else {
+              // Fallback to generic recommendations if vector search fails
+              response += `
+   • **Immediate:** Priority interventions for high-severity assessments
+   • **Short-term:** Increase therapy frequency for elevated scores  
+   • **Ongoing:** Regular monitoring of moderate-severity symptoms
+   • **Follow-up:** Complete reassessment in 4 weeks
+   • **Referral:** Consider specialist consultation as indicated
+   
+   ⚠️ Note: Unable to retrieve specific DSM-5 recommendations from vector database`;
+            }
+          } catch (error) {
+            console.error('❌ Error generating clinical recommendations:', error);
+            // Fallback to generic recommendations
+            response += `
    • **Immediate:** Priority interventions for high-severity assessments
    • **Short-term:** Increase therapy frequency for elevated scores
-   • **Ongoing:** Regular monitoring of moderate-severity symptoms  
-   • **Follow-up:** Complete reassessment in 4 weeks
-   • **Referral:** Consider specialist consultation as indicated`
+   • **Ongoing:** Regular monitoring of moderate-severity symptoms
+   • **Follow-up:** Complete reassessment in 4 weeks  
+   • **Referral:** Consider specialist consultation as indicated
+   
+   ⚠️ Note: Clinical recommendations service temporarily unavailable`;
+          }
+
+          // Add trend and timeline data at the end after clinical recommendations
+          if (timelineData.length > 0 && Object.keys(trendData).length > 0) {
+            response += `
+
+[TREND_DATA]${JSON.stringify(trendData)}[/TREND_DATA]
+
+[TIMELINE_DATA]${JSON.stringify(timelineData)}[/TIMELINE_DATA]`
+            console.log('🔍 Debug API - Added TREND_DATA and TIMELINE_DATA sections after clinical recommendations');
+          }
+
+          // Allow longer responses for complete clinical recommendations
+          if (response.length > 15000) {
+            console.log(`⚠️ Response length (${response.length}) exceeds maximum, truncating...`);
+            response = response.substring(0, 14500) + '\n\n...[Content truncated for system limits]';
+          }
 
           return {
             content: response,
@@ -1263,6 +1357,91 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
             total_assessments: isRealData ? timelineData.length : 5,
             report_type: "comprehensive_clinical_assessment",
             is_real_data: isRealData
+          }
+        }
+      }),
+
+      get_clinical_recommendations: tool({
+        description: "Get evidence-based clinical recommendations from vector database based on patient assessment data",
+        parameters: z.object({
+          patient_id: z.string().describe("The patient identifier"),
+          assessment_data: z.any().optional().describe("Current assessment data for context"),
+          domains: z.array(z.string()).optional().describe("Specific domains to focus on (e.g., ['PTSD', 'Depression'])"),
+          severity_level: z.string().optional().describe("Patient severity level (Mild, Moderate, Severe)"),
+          max_recommendations: z.number().optional().describe("Maximum number of recommendations to return (default: 5)")
+        }),
+        execute: async ({ patient_id, assessment_data, domains, severity_level, max_recommendations = 5 }) => {
+          try {
+            console.log(`🎯 Getting clinical recommendations for patient: ${patient_id}`);
+            
+            // If no assessment data provided, try to get current patient data
+            let contextualAssessmentData = assessment_data;
+            if (!contextualAssessmentData) {
+              const patientResult = await serverMcpClient.getPatientAssessments(patient_id);
+              if (patientResult.success && patientResult.data) {
+                contextualAssessmentData = patientResult.data.assessment_breakdown || {};
+              }
+            }
+
+            // Generate contextual recommendations from Vectorize DSM-5 database
+            const recommendations = await generateContextualRecommendations(contextualAssessmentData);
+            
+            // Filter by domains if specified
+            let filteredRecommendations = recommendations;
+            if (domains && domains.length > 0) {
+              filteredRecommendations = recommendations.filter(rec => 
+                domains.some(domain => 
+                  rec.recommendation.domain.toLowerCase().includes(domain.toLowerCase()) ||
+                  rec.recommendation.keywords.some(keyword => 
+                    domain.toLowerCase().includes(keyword.toLowerCase())
+                  )
+                )
+              );
+            }
+
+            // Filter by severity if specified
+            if (severity_level) {
+              filteredRecommendations = filteredRecommendations.filter(rec =>
+                rec.recommendation.severity.toLowerCase() === severity_level.toLowerCase() ||
+                rec.recommendation.severity.toLowerCase() === 'general'
+              );
+            }
+
+            // Limit results
+            const limitedRecommendations = filteredRecommendations.slice(0, max_recommendations);
+
+            const response = {
+              patient_id,
+              recommendations_found: limitedRecommendations.length,
+              total_available: recommendations.length,
+              filters_applied: {
+                domains: domains || [],
+                severity_level: severity_level || 'any',
+                max_results: max_recommendations
+              },
+              clinical_recommendations: limitedRecommendations.map(rec => ({
+                title: rec.recommendation.title,
+                description: rec.recommendation.description,
+                domain: rec.recommendation.domain,
+                category: rec.recommendation.category,
+                content: rec.recommendation.content,
+                evidence_level: rec.recommendation.evidenceLevel,
+                source: rec.recommendation.source,
+                priority: rec.recommendation.priority,
+                relevance_score: Math.round(rec.score * 100) / 100,
+                keywords: rec.recommendation.keywords.slice(0, 5) // Limit keywords for readability
+              }))
+            };
+
+            console.log(`🎯 Returning ${limitedRecommendations.length} clinical recommendations for patient ${patient_id}`);
+            return response;
+            
+          } catch (error) {
+            console.error('❌ Error getting clinical recommendations:', error);
+            return { 
+              error: `Unable to retrieve clinical recommendations for patient ${patient_id}`,
+              details: error instanceof Error ? error.message : 'Unknown error'
+            };
           }
         },
       }),
