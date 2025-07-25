@@ -1303,7 +1303,7 @@ Based on comprehensive assessment data and DSM-5 guidelines, the following evide
                     
                     response += `
 
-**${domain.toUpperCase()} (Score: ${score}, Severity: ${severity})**`;
+${domain.toUpperCase()} (Score: ${score}, Severity: ${severity})`;
                     
                     // Show top 2 recommendations for this domain
                     domainRecs.slice(0, 2).forEach((rec, idx) => {
@@ -1316,7 +1316,7 @@ Based on comprehensive assessment data and DSM-5 guidelines, the following evide
                       
                       response += `
 
-**Treatment Option ${idx + 1}: ${rec.recommendation.category}** (${relevancePercent}% match)
+Treatment Option ${idx + 1}: ${rec.recommendation.category} (${relevancePercent}% match)
 
 ${formattedContent}
 
@@ -1346,7 +1346,7 @@ ${formattedContent}
                   if (domainRecs.length > 0) {
                     response += `
 
-**${domain.toUpperCase()}**`;
+${domain.toUpperCase()}`;
                     domainRecs.slice(0, 1).forEach(rec => {
                       response += `
 - ${rec.recommendation.content}`;
