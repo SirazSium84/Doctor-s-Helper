@@ -1,15 +1,35 @@
 # Healthcare Dashboard with AI Assistant
 
-A Next.js healthcare analytics dashboard with an integrated AI chat assistant powered by your FastMCP healthcare server.
+A production-ready Next.js healthcare analytics dashboard with an integrated AI chat assistant powered by a robust FastMCP healthcare server.
 
 ## Features
 
 - **AI Chat Assistant**: Powered by OpenAI GPT-4 with access to healthcare assessment tools
-- **MCP Server Integration**: Connects to your FastMCP healthcare server for real-time data
+- **Production-Ready MCP Server**: FastMCP server with enterprise-grade features
 - **Assessment Analytics**: Support for PTSD, PHQ-9, GAD-7, WHO-5, and DERS assessments
 - **Risk Analysis**: Patient risk scoring and population comparisons
 - **Substance Use Tracking**: Analysis of substance use patterns and history
 - **Modern UI**: Built with Next.js, Tailwind CSS, and shadcn/ui components
+
+## Enterprise Features
+
+### 🔒 Security & Reliability
+- **Input Validation**: Pydantic models for all API inputs
+- **Structured Logging**: JSON logging with request tracing
+- **Health Monitoring**: Comprehensive health checks and metrics
+- **Error Handling**: Graceful error handling with detailed logging
+
+### ⚡ Performance & Scalability  
+- **Query Pagination**: Efficient data retrieval with pagination support
+- **Smart Caching**: TTL-based caching for expensive operations
+- **Database Optimization**: Optimized Supabase queries
+- **Resource Monitoring**: Memory, CPU, and database performance tracking
+
+### 🚀 Deployment & Operations
+- **Docker Support**: Complete containerization with Docker Compose
+- **Production Ready**: Nginx reverse proxy configuration
+- **Environment Management**: Comprehensive environment variable support
+- **Testing Suite**: Unit, integration, and end-to-end tests
 
 ## Quick Start
 
@@ -93,6 +113,39 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## Docker Deployment
+
+### Quick Start with Docker
+
+1. **Copy environment file**:
+```bash
+cp .env.docker.example .env.docker
+# Edit .env.docker with your Supabase credentials
+```
+
+2. **Build and run**:
+```bash
+docker-compose up --build
+```
+
+3. **Access the application**:
+   - MCP Server: http://localhost:8000
+   - Health Check: http://localhost:8000/health (if available)
+
+### Production Deployment
+
+For production with Nginx reverse proxy:
+
+```bash
+docker-compose --profile production up -d
+```
+
+This includes:
+- MCP server with resource limits
+- Nginx reverse proxy with rate limiting
+- SSL/TLS termination (configure certificates)
+- Health checks and auto-restart
+
 ## Available Scripts
 
 - `pnpm dev` - Start the Next.js development server
@@ -165,6 +218,17 @@ The chat assistant has access to these MCP server tools:
 - `compare_patient_to_population`
 - `identify_patients_needing_attention`
 
+### Enhanced Assessment Tools (with pagination/caching)
+- `list_patients_paginated` - Paginated patient listing
+- `get_assessment_summary_stats_cached` - Cached statistics
+- `search_patients_by_score_range` - Score-based search with pagination
+- `get_cache_status` - Cache performance metrics
+
+### Health Check Tools
+- `health_check` - Comprehensive health monitoring
+- `health_check_simple` - Basic health status
+- `get_server_info` - Server configuration details
+
 ### Substance Use Tools
 - `get_patient_substance_history`
 - `analyze_substance_patterns_across_patients`
@@ -191,6 +255,42 @@ healthcare-dashboard/
 │   └── start-mcp-server.sh   # MCP server startup script
 └── types/
     └── assessments.ts        # TypeScript types
+```
+
+## Testing
+
+### Running Tests
+
+```bash
+# Install test dependencies
+uv sync
+
+# Run all tests
+pytest
+
+# Run specific test categories
+pytest -m unit              # Unit tests only
+pytest -m integration       # Integration tests only
+pytest tests/unit/          # Tests in specific directory
+
+# Run with coverage
+pytest --cov=. --cov-report=html
+
+# Run performance tests
+pytest -m performance --durations=10
+```
+
+### Test Structure
+
+```
+tests/
+├── unit/                   # Unit tests
+│   ├── test_models.py     # Pydantic model validation
+│   └── test_health_check.py # Health check functionality
+├── integration/           # Integration tests
+│   └── test_database_operations.py
+├── e2e/                  # End-to-end tests
+└── fixtures/             # Test data fixtures
 ```
 
 ## Troubleshooting
