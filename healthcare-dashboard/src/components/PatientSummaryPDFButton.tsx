@@ -195,28 +195,34 @@ const styles = StyleSheet.create({
     color: '#6b7280'
   },
   riskSection: {
-    backgroundColor: '#fef2f2',
-    padding: 16,
-    marginVertical: 12,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#dc2626'
+    backgroundColor: '#ffffff',
+    padding: 0,
+    marginVertical: 16,
+    borderWidth: 2,
+    borderColor: '#dc2626',
+    overflow: 'hidden'
   },
   riskLevelText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#dc2626',
-    marginBottom: 8
+    color: '#ffffff',
+    backgroundColor: '#dc2626',
+    padding: 12,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1
   },
   riskScoreContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: '#fef2f2'
   },
   riskScoreText: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937'
+    color: '#dc2626'
   },
   prioritySection: {
     marginVertical: 16
@@ -321,7 +327,7 @@ function renderMarkdownToPDF(md: string) {
             if (headingText.includes('RISK STRATIFICATION')) {
               return (
                 <View key={idx} style={styles.riskSection}>
-                  <Text style={[styles.heading1, { color: '#dc2626', borderBottomWidth: 0 }]}>{token.text}</Text>
+                  <Text style={styles.riskLevelText}>RISK STRATIFICATION</Text>
                 </View>
               );
             }
@@ -378,20 +384,64 @@ function renderMarkdownToPDF(md: string) {
           if (/Overall Risk Level/i.test(token.text)) {
             const riskLevel = token.text.split(' ').pop();
             const riskColor = riskLevel === 'HIGH' ? '#dc2626' : riskLevel === 'MODERATE' ? '#f59e0b' : '#10b981';
+            const bgColor = riskLevel === 'HIGH' ? '#fef2f2' : riskLevel === 'MODERATE' ? '#fef3c7' : '#f0fdf4';
             return (
-              <Text key={idx} style={[styles.riskLevelText, { color: riskColor }]}>
-                {token.text}
-              </Text>
+              <View key={idx} style={{ 
+                backgroundColor: bgColor, 
+                padding: 12, 
+                marginVertical: 8,
+                borderWidth: 2,
+                borderColor: riskColor,
+                alignItems: 'center'
+              }}>
+                <Text style={{ 
+                  fontSize: 16, 
+                  fontWeight: 'bold', 
+                  color: riskColor,
+                  textTransform: 'uppercase',
+                  letterSpacing: 1
+                }}>
+                  {token.text}
+                </Text>
+              </View>
             );
           }
           if (/Composite Risk Score/i.test(token.text)) {
             const scoreMatch = token.text.match(/(\d+)\/(\d+)/);
             if (scoreMatch) {
+              const score = parseInt(scoreMatch[1]);
+              const maxScore = parseInt(scoreMatch[2]);
+              const scoreColor = score >= 70 ? '#dc2626' : score >= 40 ? '#f59e0b' : '#10b981';
               return (
                 <View key={idx} style={styles.riskScoreContainer}>
-                  <Text style={styles.text}>Composite Risk Score: </Text>
-                  <Text style={[styles.riskScoreText, { color: '#dc2626' }]}>{scoreMatch[1]}</Text>
-                  <Text style={styles.riskScoreText}>/{scoreMatch[2]}</Text>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ 
+                      fontSize: 12, 
+                      color: '#6b7280', 
+                      marginBottom: 4,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.5
+                    }}>Composite Risk Score</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                      <Text style={[styles.riskScoreText, { color: scoreColor }]}>{scoreMatch[1]}</Text>
+                      <Text style={[styles.riskScoreText, { fontSize: 16, color: '#6b7280' }]}>/{scoreMatch[2]}</Text>
+                    </View>
+                    {/* Risk indicator bar */}
+                    <View style={{ 
+                      width: 100, 
+                      height: 6, 
+                      backgroundColor: '#e5e7eb', 
+                      marginTop: 8,
+                      borderRadius: 3,
+                      overflow: 'hidden'
+                    }}>
+                      <View style={{ 
+                        width: `${(score / maxScore) * 100}%`, 
+                        height: '100%', 
+                        backgroundColor: scoreColor 
+                      }} />
+                    </View>
+                  </View>
                 </View>
               );
             }
@@ -458,49 +508,76 @@ function SummaryBlockPDF({ summaryLines }: { summaryLines: { label: string, valu
   if (!summaryLines || summaryLines.length === 0) return null;
   return (
     <View style={{ 
-      marginBottom: 24, 
-      marginTop: 8, 
-      borderWidth: 1, 
-      borderColor: '#d1d5db', 
-      borderRadius: 8, 
-      backgroundColor: '#f9fafb', 
-      padding: 16,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+      marginBottom: 28, 
+      marginTop: 12, 
+      borderWidth: 2, 
+      borderColor: '#1e40af', 
+      backgroundColor: '#ffffff', 
+      padding: 0,
+      overflow: 'hidden'
     }}>
-      <Text style={{ 
-        fontSize: 14, 
-        fontWeight: 'bold', 
-        color: '#374151', 
-        marginBottom: 10,
-        textAlign: 'center',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5
-      }}>Patient Information</Text>
-      {summaryLines.map((item, idx) => (
-        <View key={idx} style={{ 
-          flexDirection: 'row', 
-          marginBottom: 6, 
-          backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f3f4f6', 
-          paddingVertical: 6, 
-          paddingHorizontal: 8,
-          borderRadius: 4,
-          borderLeftWidth: 3,
-          borderLeftColor: '#3b82f6'
-        }}>
-          <Text style={{ 
-            fontWeight: 'bold', 
-            fontSize: 11, 
-            minWidth: 180,
-            color: '#374151'
-          }}>{item.label}:</Text>
-          <Text style={{ 
-            fontSize: 11, 
-            marginLeft: 8,
-            color: '#111827',
-            fontWeight: '500'
-          }}>{item.value}</Text>
-        </View>
-      ))}
+      {/* Header section */}
+      <View style={{
+        backgroundColor: '#1e40af',
+        paddingVertical: 12,
+        paddingHorizontal: 16
+      }}>
+        <Text style={{ 
+          fontSize: 14, 
+          fontWeight: 'bold', 
+          color: '#ffffff', 
+          textAlign: 'center',
+          textTransform: 'uppercase',
+          letterSpacing: 1
+        }}>PATIENT SUMMARY</Text>
+      </View>
+      
+      {/* Content section */}
+      <View style={{ padding: 16 }}>
+        {summaryLines.map((item, idx) => (
+          <View key={idx} style={{ 
+            flexDirection: 'row', 
+            marginBottom: idx === summaryLines.length - 1 ? 0 : 8, 
+            backgroundColor: '#f8fafc', 
+            paddingVertical: 10, 
+            paddingHorizontal: 12,
+            borderWidth: 1,
+            borderColor: '#e2e8f0',
+            alignItems: 'center'
+          }}>
+            {/* Label with background */}
+            <View style={{
+              backgroundColor: '#3b82f6',
+              paddingVertical: 4,
+              paddingHorizontal: 8,
+              marginRight: 12,
+              minWidth: 140
+            }}>
+              <Text style={{ 
+                fontWeight: 'bold', 
+                fontSize: 10, 
+                color: '#ffffff',
+                textAlign: 'center',
+                textTransform: 'uppercase'
+              }}>{item.label}</Text>
+            </View>
+            
+            {/* Value */}
+            <Text style={{ 
+              fontSize: 12, 
+              color: '#1f2937',
+              fontWeight: 'bold',
+              flex: 1
+            }}>{item.value}</Text>
+          </View>
+        ))}
+      </View>
+      
+      {/* Bottom accent line */}
+      <View style={{
+        height: 3,
+        backgroundColor: '#3b82f6'
+      }} />
     </View>
   );
 }
