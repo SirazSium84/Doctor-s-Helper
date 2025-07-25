@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 interface AssessmentData {
   domain: string
@@ -84,12 +84,20 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
     const assessmentMatch = text.match(/\[ASSESSMENT_TABLE\]([\s\S]*?)\[\/ASSESSMENT_TABLE\]/)
     if (assessmentMatch) {
       try {
-        console.log('🔍 Debug - Assessment table JSON:', assessmentMatch[1])
-        structuredData.assessmentTable = JSON.parse(assessmentMatch[1])
+        const jsonData = assessmentMatch[1].trim()
+        console.log('🔍 Debug - Assessment table JSON:', jsonData.substring(0, 100) + '...')
+        
+        // Check if data looks like an error before parsing
+        if (jsonData.startsWith('Internal') || jsonData.startsWith('Error') || jsonData.startsWith('HTTP')) {
+          console.error('Assessment table contains error message:', jsonData)
+          return structuredData
+        }
+        
+        structuredData.assessmentTable = JSON.parse(jsonData)
         structuredData.plainText = text.replace(assessmentMatch[0], '')
       } catch (e) {
         console.error('Failed to parse assessment table:', e)
-        console.error('Assessment table content:', assessmentMatch[1])
+        console.error('Assessment table content (first 200 chars):', assessmentMatch[1].substring(0, 200))
       }
     }
 
@@ -97,12 +105,20 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
     const chartMatch = text.match(/\[CHART_DATA\]([\s\S]*?)\[\/CHART_DATA\]/)
     if (chartMatch) {
       try {
-        console.log('🔍 Debug - Chart data JSON:', chartMatch[1])
-        structuredData.chartData = JSON.parse(chartMatch[1])
+        const jsonData = chartMatch[1].trim()
+        console.log('🔍 Debug - Chart data JSON:', jsonData.substring(0, 100) + '...')
+        
+        // Check if data looks like an error before parsing
+        if (jsonData.startsWith('Internal') || jsonData.startsWith('Error') || jsonData.startsWith('HTTP')) {
+          console.error('Chart data contains error message:', jsonData)
+          return structuredData
+        }
+        
+        structuredData.chartData = JSON.parse(jsonData)
         structuredData.plainText = structuredData.plainText.replace(chartMatch[0], '')
       } catch (e) {
         console.error('Failed to parse chart data:', e)
-        console.error('Chart data content:', chartMatch[1])
+        console.error('Chart data content (first 200 chars):', chartMatch[1].substring(0, 200))
       }
     }
 
@@ -113,13 +129,21 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
     console.log('🔍 Debug - Timeline match found:', !!timelineMatch);
     if (timelineMatch) {
       try {
-        console.log('🔍 Debug - Timeline data JSON:', timelineMatch[1].substring(0, 200) + '...')
-        structuredData.timelineData = JSON.parse(timelineMatch[1])
+        const jsonData = timelineMatch[1].trim()
+        console.log('🔍 Debug - Timeline data JSON:', jsonData.substring(0, 200) + '...')
+        
+        // Check if data looks like an error before parsing
+        if (jsonData.startsWith('Internal') || jsonData.startsWith('Error') || jsonData.startsWith('HTTP')) {
+          console.error('Timeline data contains error message:', jsonData)
+          return structuredData
+        }
+        
+        structuredData.timelineData = JSON.parse(jsonData)
         console.log('🔍 Debug - Parsed timeline data length:', structuredData.timelineData.length);
         structuredData.plainText = structuredData.plainText.replace(timelineMatch[0], '')
       } catch (e) {
         console.error('Failed to parse timeline data:', e)
-        console.error('Timeline data content:', timelineMatch[1])
+        console.error('Timeline data content (first 200 chars):', timelineMatch[1].substring(0, 200))
       }
     } else {
       console.log('🔍 Debug - No TIMELINE_DATA match found in text');
@@ -141,14 +165,22 @@ export function EnhancedChatRenderer({ content, role }: EnhancedMessageProps) {
     const trendMatch = text.match(/\[TREND_DATA\]([\s\S]*?)\[\/TREND_DATA\]/)
     console.log('🔍 Debug - trendMatch found:', !!trendMatch);
     if (trendMatch) {
-      console.log('🔍 Debug - trendMatch content:', trendMatch[1].substring(0, 200) + '...');
       try {
-        structuredData.trendData = JSON.parse(trendMatch[1])
+        const jsonData = trendMatch[1].trim()
+        console.log('🔍 Debug - trendMatch content:', jsonData.substring(0, 200) + '...');
+        
+        // Check if data looks like an error before parsing
+        if (jsonData.startsWith('Internal') || jsonData.startsWith('Error') || jsonData.startsWith('HTTP')) {
+          console.error('Trend data contains error message:', jsonData)
+          return structuredData
+        }
+        
+        structuredData.trendData = JSON.parse(jsonData)
         console.log('🔍 Debug - Parsed trendData successfully:', Object.keys(structuredData.trendData));
         structuredData.plainText = structuredData.plainText.replace(trendMatch[0], '')
       } catch (e) {
         console.error('Failed to parse trend data:', e)
-        console.error('Trend data content:', trendMatch[1])
+        console.error('Trend data content (first 200 chars):', trendMatch[1].substring(0, 200))
       }
     }
 

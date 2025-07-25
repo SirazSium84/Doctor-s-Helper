@@ -5,24 +5,21 @@ import { useDashboardStore } from "@/store/dashboard-store"
 import { comprehensiveDataService } from "@/lib/comprehensive-data-service"
 import { Header } from "@/components/header"
 import { NavigationTabs } from "@/components/navigation-tabs"
-import { PatientSelector } from "@/components/patient-selector"
 import { WelcomePage } from "@/components/pages/welcome-page"
 import { AssessmentScoresPage } from "@/components/pages/assessment-scores-page"
 import { SpiderChartPage } from "@/components/pages/spider-chart-page"
 import { RiskAnalysisPage } from "@/components/pages/risk-analysis-page"
 import { BiopsychosocialPage } from "@/components/pages/biopsychosocial-page"
 import { PHPEmotionalAnalyticsPage } from "@/components/pages/php-emotional-analytics-page"
-import { Home, BarChart3, Radar, BoxSelect, TrendingUp, User, Calendar, Heart, Brain } from "lucide-react"
+import { Home, BarChart3, Radar, TrendingUp, User, Brain } from "lucide-react"
 
 const tabs = [
   { id: "welcome", label: "Clinical Overview", icon: <Home className="w-4 h-4" /> },
   { id: "scores", label: "Patient Assessments", icon: <BarChart3 className="w-4 h-4" /> },
   { id: "spider", label: "Multi-Domain Analysis", icon: <Radar className="w-4 h-4" /> },
-  { id: "boxplots", label: "Statistical Analysis", icon: <BoxSelect className="w-4 h-4" /> },
   { id: "risk", label: "Risk Stratification", icon: <TrendingUp className="w-4 h-4" /> },
   { id: "bps", label: "BPS Assessment", icon: <User className="w-4 h-4" /> },
   { id: "php", label: "Behavioral Health Analytics", icon: <Brain className="w-4 h-4" /> },
-  { id: "ahcm", label: "AHCM", icon: <Heart className="w-4 h-4" /> },
 ]
 
 export default function Dashboard() {
@@ -103,32 +100,12 @@ export default function Dashboard() {
         return <AssessmentScoresPage />
       case "spider":
         return <SpiderChartPage />
-      case "boxplots":
-        return (
-          <div className="flex items-center justify-center h-96 text-gray-400">
-            <div className="text-center">
-              <BoxSelect className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">Box Plots Coming Soon</p>
-              <p className="text-sm">Statistical analysis by program and discharge type</p>
-            </div>
-          </div>
-        )
       case "risk":
         return <RiskAnalysisPage />
       case "bps":
         return <BiopsychosocialPage />
       case "php":
         return <PHPEmotionalAnalyticsPage />
-      case "ahcm":
-        return (
-          <div className="flex items-center justify-center h-96 text-gray-400">
-            <div className="text-center">
-              <Heart className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">AHCM Coming Soon</p>
-              <p className="text-sm">Advanced Healthcare Case Management analytics</p>
-            </div>
-          </div>
-        )
       default:
         return <WelcomePage />
     }

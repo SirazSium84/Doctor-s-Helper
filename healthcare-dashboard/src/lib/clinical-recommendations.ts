@@ -1,11 +1,28 @@
 import { openai } from '@ai-sdk/openai';
 import { embed } from 'ai';
+import { generateText } from "ai";
 import { 
-  getRecommendationsIndex, 
-  ClinicalRecommendation, 
-  RecommendationSearchResult,
-  ensureRecommendationsIndexExists 
-} from './pinecone-client';
+  getVectorizeClient,
+  VectorizeSearchResult 
+} from './vectorize-client';
+
+// Re-export types for compatibility
+export type ClinicalRecommendation = {
+  id: string;
+  title: string;
+  description: string;
+  domain: string;
+  severity: string;
+  evidenceLevel: string;
+  category: string;
+  content: string;
+  keywords: string[];
+  source: string;
+  lastUpdated: string;
+  priority: number;
+};
+
+export type RecommendationSearchResult = VectorizeSearchResult;
 
 // Generate embeddings for text using OpenAI
 export async function generateEmbedding(text: string): Promise<number[]> {
@@ -22,7 +39,107 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   }
 }
 
-// Search for relevant clinical recommendations based on patient data from DSM-5
+// Helper functions from vectorize-recommendations.ts
+function extractActionableContent(text: string): string {
+  const lowerContent = text.toLowerCase();
+  
+  if (lowerContent.includes('ptsd') || lowerContent.includes('trauma') || lowerContent.includes('posttraumatic')) {
+    if (lowerContent.includes('severe') || lowerContent.includes('interpersonal')) {
+      return `- Primary Intervention: Trauma-focused psychotherapy (CPT, PE, or EMDR)\n- Comorbidity Screening: Assess for depression, substance use, and anxiety disorders\n- Safety Planning: Implement comprehensive safety assessment for suicidal ideation\n- Advanced Options: Consider combination therapy for complex trauma presentations`;
+    }
+    return `- First-Line Treatment: Evidence-based trauma therapy (CPT, PE, or EMDR)\n- Screening: Assess for substance use and comorbid depression\n- Psychoeducation: Provide trauma response education to patient and family\n- Monitoring: Track symptom reduction using PCL-5 weekly`;
+  }
+  
+  if (lowerContent.includes('depression') || lowerContent.includes('depressive') || lowerContent.includes('mood')) {
+    if (lowerContent.includes('severe') || lowerContent.includes('major')) {
+      return `- Medication: SSRI/SNRI as first-line pharmacotherapy\n- Psychotherapy: Implement CBT or IPT (2x weekly if severe)\n- Safety Assessment: Screen for suicidal ideation at each visit\n- Response Monitoring: Track PHQ-9 scores bi-weekly`;
+    }
+    return `- Initial Approach: CBT or interpersonal therapy\n- Medication: Consider if PHQ-9 > 10 or inadequate therapy response\n- Screening: Rule out bipolar spectrum disorders\n- Lifestyle: Address sleep hygiene and exercise`;
+  }
+  
+  if (lowerContent.includes('anxiety') || lowerContent.includes('anxious') || lowerContent.includes('panic')) {
+    return `- Psychotherapy: CBT with exposure therapy components\n- Medication: SSRI/SNRI for severe symptoms (GAD-7 > 15)\n- Skills Training: Relaxation techniques and mindfulness practices\n- Behavioral: Systematic approach to reduce avoidance patterns`;
+  }
+  
+  if (lowerContent.includes('substance') || lowerContent.includes('alcohol') || lowerContent.includes('drug')) {
+    return `- Assessment: Evaluate readiness to change (stages of change model)\n- Intervention: Motivational interviewing techniques\n- Relapse Prevention: CBT-based relapse prevention strategies\n- Level of Care: Assess need for detox or intensive outpatient treatment`;
+  }
+  
+  if (lowerContent.includes('emotion') && lowerContent.includes('regulation')) {
+    return `- Primary Treatment: DBT or emotion-focused therapy\n- Skills Modules: Distress tolerance and emotion regulation training\n- Mindfulness: Implement mindfulness-based interventions\n- Interpersonal: Address interpersonal effectiveness skills`;
+  }
+  
+  if (lowerContent.includes('functional') || lowerContent.includes('disability') || lowerContent.includes('impairment')) {
+    return `- Assessment: Comprehensive functional capacity evaluation\n- Intervention: Occupational therapy for daily living skills\n- Barriers: Identify and address functional limitations\n- Vocational: Consider work rehabilitation if appropriate`;
+  }
+  
+  return `- Protocol: Apply evidence-based treatment for diagnosed condition\n- Monitoring: Regular symptom and functional assessment\n- Adjustment: Modify treatment based on response\n- Follow-up: Schedule regular review appointments`;
+}
+
+function generateActionableTitle(content: string, originalTitle?: string): string {
+  const lowerContent = content.toLowerCase();
+  
+  if (lowerContent.includes('ptsd') || lowerContent.includes('trauma')) {
+    return 'PTSD Treatment Intervention';
+  }
+  if (lowerContent.includes('depression') || lowerContent.includes('depressive')) {
+    return 'Depression Treatment Protocol';
+  }
+  if (lowerContent.includes('anxiety') || lowerContent.includes('anxious')) {
+    return 'Anxiety Treatment Approach';
+  }
+  if (lowerContent.includes('emotion') && lowerContent.includes('regulation')) {
+    return 'Emotion Regulation Therapy';
+  }
+  if (lowerContent.includes('functional') || lowerContent.includes('disability')) {
+    return 'Functional Rehabilitation';
+  }
+  
+  return originalTitle || 'Clinical Treatment Recommendation';
+}
+
+function determineDomain(content: string): string {
+  const lowerContent = content.toLowerCase();
+  
+  if (lowerContent.includes('ptsd') || lowerContent.includes('trauma')) return 'PTSD';
+  if (lowerContent.includes('depression') || lowerContent.includes('depressive')) return 'Depression';
+  if (lowerContent.includes('anxiety') || lowerContent.includes('anxious')) return 'Anxiety';
+  if (lowerContent.includes('emotion') && lowerContent.includes('regulation')) return 'Emotion Regulation';
+  if (lowerContent.includes('functional') || lowerContent.includes('disability')) return 'Functional';
+  
+  return 'Mental Health';
+}
+
+function determineCategory(content: string): string {
+  const lowerContent = content.toLowerCase();
+  
+  if (lowerContent.includes('psychotherapy') || lowerContent.includes('therapy')) return 'Psychotherapy';
+  if (lowerContent.includes('medication') || lowerContent.includes('pharmacological')) return 'Pharmacotherapy';
+  if (lowerContent.includes('intervention') || lowerContent.includes('treatment')) return 'Intervention';
+  
+  return 'Clinical Guidance';
+}
+
+function extractClinicalKeywords(text: string): string[] {
+  const treatmentTerms = [
+    'cognitive behavioral therapy', 'cbt', 'psychotherapy', 'exposure therapy',
+    'emdr', 'dialectical behavior therapy', 'dbt', 'mindfulness', 'medication',
+    'intervention', 'treatment', 'therapeutic', 'clinical'
+  ];
+  
+  const keywords = [];
+  const lowerText = text.toLowerCase();
+  
+  for (const term of treatmentTerms) {
+    if (lowerText.includes(term)) {
+      keywords.push(term);
+    }
+  }
+  
+  return keywords.slice(0, 8);
+}
+
+// Search using Vectorize instead of Pinecone
 export async function searchClinicalRecommendations(
   query: string,
   options: {
@@ -36,61 +153,49 @@ export async function searchClinicalRecommendations(
   try {
     const {
       topK = 5,
-      minScore = 0.7,
-      domain,
-      severity,
-      category
+      minScore = 0.3,
     } = options;
 
-    // Generate embedding for the search query
-    const queryEmbedding = await generateEmbedding(query);
+    console.log(`🔍 Vectorize text search query: "${query}"`);
 
-    // Get the Pinecone index
-    const index = await getRecommendationsIndex();
+    // Get the Vectorize client
+    const client = getVectorizeClient();
 
-    // Build filter for metadata
-    const filter: any = {};
-    if (domain) filter.domain = domain;
-    if (severity) filter.severity = severity;
-    if (category) filter.category = category;
-
-    // Perform vector search
-    const searchResponse = await index.query({
-      vector: queryEmbedding,
+    // Perform text-based search
+    const searchResponse = await client.search(query, {
       topK,
+      filter: {},
       includeMetadata: true,
-      filter: Object.keys(filter).length > 0 ? filter : undefined,
     });
 
-    console.log(`🔍 Search query: "${query}"`);
-    console.log(`🔍 Search response: ${searchResponse.matches?.length || 0} matches found`);
+    console.log(`🔍 Vectorize search response: ${searchResponse.matches?.length || 0} matches found`);
     if (searchResponse.matches && searchResponse.matches.length > 0) {
       console.log(`🔍 Top match score: ${searchResponse.matches[0].score}`);
-      console.log(`🔍 Top match metadata keys: ${Object.keys(searchResponse.matches[0].metadata || {})}`);
     }
 
-    // Process results and filter by minimum score
+    // Process results
     const results: RecommendationSearchResult[] = [];
     
     if (searchResponse.matches) {
       for (const match of searchResponse.matches) {
         if (match.score && match.score >= minScore && match.metadata) {
-          // Adapt to DSM-5 metadata structure - be flexible with field names
           const metadata = match.metadata;
+          const content = metadata.content || '';
+          const actionableContent = extractActionableContent(content);
           
           const recommendation: ClinicalRecommendation = {
             id: match.id,
-            title: metadata.title || metadata.section || metadata.chapter || 'DSM-5 Content',
-            description: metadata.description || metadata.summary || 'Clinical information from DSM-5',
-            domain: metadata.domain || metadata.disorder || metadata.category || 'General',
-            severity: metadata.severity || metadata.level || 'General',
-            evidenceLevel: metadata.evidenceLevel || metadata.level || 'DSM-5',
-            category: metadata.category || metadata.type || 'Diagnostic',
-            content: metadata.content || metadata.text || metadata.chunk || '',
-            keywords: metadata.keywords ? (metadata.keywords as string).split(',') : [],
-            source: metadata.source || metadata.page || 'DSM-5',
-            lastUpdated: metadata.lastUpdated || new Date().toISOString(),
-            priority: metadata.priority as number || 5,
+            title: generateActionableTitle(content, metadata.title),
+            description: `Evidence-based clinical guidance (Relevance: ${(match.score * 100).toFixed(1)}%)`,
+            domain: determineDomain(content),
+            severity: metadata.severity || 'General',
+            evidenceLevel: 'DSM-5',
+            category: determineCategory(content),
+            content: actionableContent,
+            keywords: extractClinicalKeywords(content),
+            source: metadata.source || 'DSM-5',
+            lastUpdated: new Date().toISOString(),
+            priority: Math.round(match.score * 10),
           };
 
           results.push({
@@ -101,17 +206,12 @@ export async function searchClinicalRecommendations(
       }
     }
 
-    // Sort by score (highest first) and then by priority
-    results.sort((a, b) => {
-      if (Math.abs(a.score - b.score) < 0.01) {
-        return b.recommendation.priority - a.recommendation.priority;
-      }
-      return b.score - a.score;
-    });
+    // Sort by score
+    results.sort((a, b) => b.score - a.score);
 
     return results;
   } catch (error) {
-    console.error('Error searching clinical recommendations:', error);
+    console.error('Error searching clinical recommendations in Vectorize:', error);
     throw error;
   }
 }
@@ -120,52 +220,8 @@ export async function searchClinicalRecommendations(
 export async function storeClinicalRecommendation(
   recommendation: ClinicalRecommendation
 ): Promise<void> {
-  try {
-    // Ensure index exists
-    await ensureRecommendationsIndexExists();
-
-    // Create searchable text from recommendation
-    const searchableText = `
-      ${recommendation.title}
-      ${recommendation.description}
-      ${recommendation.content}
-      ${recommendation.keywords.join(' ')}
-      Domain: ${recommendation.domain}
-      Severity: ${recommendation.severity}
-      Category: ${recommendation.category}
-    `.trim();
-
-    // Generate embedding
-    const embedding = await generateEmbedding(searchableText);
-
-    // Get the index and upsert the recommendation
-    const index = await getRecommendationsIndex();
-    
-    await index.upsert([
-      {
-        id: recommendation.id,
-        values: embedding,
-        metadata: {
-          title: recommendation.title,
-          description: recommendation.description,
-          domain: recommendation.domain,
-          severity: recommendation.severity,
-          evidenceLevel: recommendation.evidenceLevel,
-          category: recommendation.category,
-          content: recommendation.content,
-          keywords: recommendation.keywords.join(','),
-          source: recommendation.source,
-          lastUpdated: recommendation.lastUpdated,
-          priority: recommendation.priority,
-        },
-      },
-    ]);
-
-    console.log(`Stored clinical recommendation: ${recommendation.id}`);
-  } catch (error) {
-    console.error('Error storing clinical recommendation:', error);
-    throw error;
-  }
+  // This function is here for compatibility but uses Vectorize implementation
+  console.log('storeClinicalRecommendation not implemented for Vectorize in this file');
 }
 
 // Generate contextual recommendations based on assessment data from DSM-5
@@ -173,87 +229,131 @@ export async function generateContextualRecommendations(
   assessmentData: any
 ): Promise<RecommendationSearchResult[]> {
   try {
-    // Extract key information from assessment data
-    const domains = [];
-    const severities = [];
-    const scores = [];
-    const conditions = [];
-
-    // Handle different data structures
+    // Helper to safely stringify values
+    function safeString(val: unknown): string {
+      return (typeof val === 'string' || typeof val === 'number') ? String(val) : '';
+    }
+    
+    // Build domain-specific data for each assessment
+    const domainQueries: Array<{domain: string, severity: string, score: number, key: string}> = [];
+    
     if (assessmentData && typeof assessmentData === 'object') {
-      // Handle assessment breakdown format
       Object.keys(assessmentData).forEach(key => {
         const assessment = assessmentData[key];
         if (assessment) {
-          // Map assessment types to clinical conditions
-          const conditionMapping = {
-            'ptsd': 'PTSD Post-Traumatic Stress Disorder trauma',
-            'phq': 'depression major depressive disorder mood',
-            'gad': 'anxiety generalized anxiety disorder panic',
-            'who': 'functional impairment disability',
-            'ders': 'emotion regulation emotional dysregulation'
-          };
+          let isRelevant = false;
+          const priorityVal = safeString(assessment.priority).toLowerCase();
+          const severityVal = safeString(assessment.severity).toLowerCase();
+          const totalScoreVal = typeof assessment.total_score === 'number' ? assessment.total_score : (typeof assessment.score === 'number' ? assessment.score : 0);
           
-          if (conditionMapping[key.toLowerCase()]) {
-            conditions.push(conditionMapping[key.toLowerCase()]);
+          if (priorityVal) {
+            isRelevant = ['high', 'medium'].includes(priorityVal);
+          } else if (severityVal) {
+            isRelevant = ['high', 'severe', 'severe impairment', 'moderate-high', 'medium', 'moderate'].some(s => severityVal.includes(s));
+          } else if (totalScoreVal > 0) {
+            isRelevant = true;
           }
           
-          if (assessment.severity) severities.push(assessment.severity);
-          if (assessment.total_score || assessment.score) {
-            scores.push(assessment.total_score || assessment.score);
+          if (isRelevant) {
+            const domainMap: Record<string, string> = {
+              'ptsd': 'PTSD Post-Traumatic Stress Disorder trauma',
+              'phq': 'Depression PHQ-9 depressive disorder mood',
+              'gad': 'Anxiety GAD-7 generalized anxiety disorder worry',
+              'who': 'Functional impairment disability WHO-DAS functioning',
+              'ders': 'Emotion regulation difficulties emotional dysregulation'
+            };
+            
+            const keyStr = safeString(key).toLowerCase();
+            const domain = domainMap[keyStr] || keyStr;
+            const severity = safeString(assessment.severity || '').toLowerCase();
+            
+            domainQueries.push({
+              domain,
+              severity,
+              score: totalScoreVal,
+              key: keyStr
+            });
           }
         }
       });
     }
-
-    // Build DSM-5 specific search queries
-    const searchQueries = [];
     
-    // Primary condition-based queries
-    if (conditions.length > 0) {
-      conditions.forEach(condition => {
-        searchQueries.push(`${condition} diagnosis criteria treatment`);
-        searchQueries.push(`${condition} differential diagnosis`);
-        searchQueries.push(`${condition} clinical features symptoms`);
-      });
-    }
-
-    // Severity-based queries
-    if (severities.length > 0) {
-      const uniqueSeverities = [...new Set(severities)];
-      uniqueSeverities.forEach(severity => {
-        searchQueries.push(`${severity} symptoms treatment intervention`);
-      });
-    }
-
-    // Default queries if no specific data
-    if (searchQueries.length === 0) {
-      searchQueries.push('mental health disorder diagnosis treatment');
-      searchQueries.push('clinical assessment psychological evaluation');
-    }
-
-    // Search DSM-5 with multiple queries
-    const allRecommendations = [];
+    // Generate per-domain queries for better coverage
+    const allResults: RecommendationSearchResult[] = [];
+    const uniqueIds = new Set<string>();
     
-    for (const query of searchQueries.slice(0, 3)) { // Limit to first 3 queries to avoid too many API calls
-      const results = await searchClinicalRecommendations(query, {
-        topK: 5,
-        minScore: 0.3, // Even lower threshold for DSM-5 content to get some results
-      });
-      allRecommendations.push(...results);
-    }
-
-    // Deduplicate results by ID
-    const uniqueResults = allRecommendations.filter((result, index, array) => 
-      array.findIndex(r => r.recommendation.id === result.recommendation.id) === index
-    );
-
-    // Sort by relevance score and limit to top 5
-    uniqueResults.sort((a, b) => b.score - a.score);
-
-    console.log(`🔍 Generated ${uniqueResults.length} DSM-5 recommendations from queries:`, searchQueries.slice(0, 3));
+    console.log(`🔍 Generating recommendations for ${domainQueries.length} domains:`, domainQueries.map(d => d.key));
     
-    return uniqueResults.slice(0, 5);
+    for (const domainData of domainQueries) {
+      // Create specific queries for each domain
+      const queries: string[] = [];
+      
+      // Base domain-specific query
+      queries.push(`${domainData.domain} ${domainData.severity} treatment intervention`);
+      
+      // Add specific query types based on domain
+      if (domainData.key === 'ptsd') {
+        queries.push(`PTSD Post-Traumatic Stress Disorder trauma therapy intervention psychotherapy CBT`);
+        queries.push(`PTSD Post-Traumatic Stress Disorder trauma medication pharmacotherapy treatment protocol`);
+      } else if (domainData.key === 'gad') {
+        queries.push(`Anxiety GAD-7 generalized anxiety disorder therapy intervention CBT relaxation`);
+        queries.push(`Anxiety disorder medication anxiolytic treatment protocol management`);
+      } else if (domainData.key === 'phq') {
+        queries.push(`Depression PHQ-9 major depressive disorder therapy intervention CBT antidepressant`);
+        queries.push(`Depression treatment medication SSRI therapy protocol mood disorder`);
+      } else if (domainData.key === 'who') {
+        queries.push(`Functional impairment disability rehabilitation occupational therapy intervention`);
+        queries.push(`WHO-DAS functional assessment disability support treatment planning`);
+      } else if (domainData.key === 'ders') {
+        queries.push(`Emotion regulation DBT dialectical behavior therapy emotional dysregulation`);
+        queries.push(`Emotion regulation skills training mindfulness distress tolerance intervention`);
+      }
+      
+      // Try LLM-generated query as well
+      try {
+        const prompt = `Generate a specific clinical search query for ${domainData.domain} with ${domainData.severity} severity (score: ${domainData.score}). Focus on evidence-based treatments and interventions.`;
+        const llmResult = await generateText({
+          model: openai("gpt-4o"),
+          messages: [
+            { role: "system", content: "You are a clinical decision support assistant. Generate concise search queries for clinical recommendations." },
+            { role: "user", content: prompt }
+          ],
+          maxTokens: 60,
+          temperature: 0.2,
+        });
+        const llmQuery = llmResult.text.trim();
+        if (llmQuery) {
+          queries.push(llmQuery);
+        }
+      } catch (e) {
+        console.log(`LLM query generation failed for ${domainData.key}, using defaults`);
+      }
+      
+      // Search with each query and collect unique results
+      for (const query of queries) {
+        console.log(`🔍 Searching for ${domainData.key}: "${query}"`);
+        const results = await searchClinicalRecommendations(query, {
+          topK: 5,
+          minScore: 0.3,
+        });
+        
+        // Add unique results
+        for (const result of results) {
+          if (!uniqueIds.has(result.recommendation.id)) {
+            uniqueIds.add(result.recommendation.id);
+            allResults.push(result);
+          }
+        }
+      }
+    }
+    
+    console.log(`📊 Total unique recommendations found: ${allResults.length}`);
+    
+    // Sort by relevance score and return top results
+    allResults.sort((a, b) => b.score - a.score);
+    
+    // Limit to top 10 to avoid overwhelming the report
+    return allResults.slice(0, 10);
   } catch (error) {
     console.error('Error generating contextual recommendations from DSM-5:', error);
     return [];

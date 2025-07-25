@@ -1,8 +1,7 @@
 import { openai } from "@ai-sdk/openai"
 import { streamText, tool } from "ai"
 import { z } from "zod"
-import { mcpClient } from "@/lib/mcp-client"
-import { generateContextualRecommendations } from "@/lib/vectorize-recommendations"
+import { generateContextualRecommendations } from "@/lib/clinical-recommendations"
 
 // Create a server-side MCP client that bypasses the API proxy
 class ServerMCPClient {
@@ -53,11 +52,17 @@ class ServerMCPClient {
       for (const line of lines) {
         if (line.startsWith('data: ')) {
           try {
-            result = JSON.parse(line.substring(6))
+            const jsonData = line.substring(6)
+            // Check if the data looks like an error message before parsing
+            if (jsonData.startsWith('Internal') || jsonData.startsWith('Error') || jsonData.startsWith('HTTP')) {
+              console.warn('Received error message instead of JSON:', jsonData)
+              continue
+            }
+            result = JSON.parse(jsonData)
             console.log(`✅ Parsed MCP result:`, result)
             break
-          } catch (e) {
-            console.warn('Failed to parse SSE data line:', line)
+          } catch (parseError) {
+            console.warn('Failed to parse SSE data line:', line.substring(0, 100) + '...')
           }
         }
       }
@@ -93,6 +98,14 @@ class ServerMCPClient {
         const content = result.result.content[0]
         if (content.type === 'text') {
           try {
+            // Check if content looks like an error message before parsing
+            if (content.text.startsWith('Internal') || content.text.startsWith('Error') || content.text.startsWith('HTTP')) {
+              console.error(`❌ Received error message:`, content.text.substring(0, 200))
+              return {
+                success: false,
+                error: content.text
+              }
+            }
             const data = JSON.parse(content.text)
             // Check if parsed data contains an error
             if (data.error) {
@@ -103,7 +116,8 @@ class ServerMCPClient {
               }
             }
             return { success: true, data }
-          } catch {
+          } catch (parseError) {
+            console.warn('Failed to parse content as JSON:', content.text.substring(0, 100))
             return { success: true, data: content.text }
           }
         }
@@ -915,8 +929,8 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
                   if (assessments.length > 0) {
                     // Sort by date to get the most recent
                     const sortedAssessments = assessments
-                      .filter(a => a.assessment_date && a.assessment_date.trim() !== '')
-                      .sort((a, b) => new Date(b.assessment_date).getTime() - new Date(a.assessment_date).getTime())
+                      .filter((a: any) => a.assessment_date && a.assessment_date.trim() !== '')
+                      .sort((a: any, b: any) => new Date(b.assessment_date).getTime() - new Date(a.assessment_date).getTime())
                     
                     if (sortedAssessments.length > 0) {
                       return sortedAssessments[0].calculated_total || sortedAssessments[0].total_score || 0
@@ -1018,7 +1032,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
                     const percentChange = firstScore > 0 ? ((change / firstScore) * 100) : 0
                     
                     trendData[type] = {
-                      trend: change > 0 ? (change > 2 ? "↑" : "→") : (change < -2 ? "↓" : "→"),
+                      trend: change > 0 ? (change > 2 ? "UP" : "STABLE") : (change < -2 ? "DOWN" : "STABLE"),
                       change: change,
                       percentChange: Math.round(percentChange * 10) / 10,
                       direction: change > 2 ? "Increasing" : change < -2 ? "Decreasing" : "Stable",
@@ -1028,7 +1042,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
                     }
                   } else {
                     trendData[type] = {
-                      trend: "→",
+                      trend: "STABLE",
                       change: 0,
                       percentChange: 0,
                       direction: scores.length === 1 ? "Single assessment" : "Insufficient data",
@@ -1050,7 +1064,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
                     "score": getLatestScore("ptsd"),
                     "maxScore": 80,
                     "severity": getLatestScore("ptsd") > 50 ? "Severe" : getLatestScore("ptsd") > 30 ? "Moderate" : "Mild",
-                    "trend": trendData.ptsd?.trend || "→",
+                    "trend": trendData.ptsd?.trend || "STABLE",
                     "priority": getLatestScore("ptsd") > 40 ? "High" : "Medium",
                     "assessmentCount": trendData.ptsd?.assessmentCount || 0,
                     "trendDirection": trendData.ptsd?.direction || "Unknown"
@@ -1060,7 +1074,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
                     "score": getLatestScore("phq"),
                     "maxScore": 27,
                     "severity": getLatestScore("phq") > 15 ? "Severe" : getLatestScore("phq") > 10 ? "Moderate" : "Mild",
-                    "trend": trendData.phq?.trend || "→",
+                    "trend": trendData.phq?.trend || "STABLE",
                     "priority": getLatestScore("phq") > 15 ? "High" : "Medium",
                     "assessmentCount": trendData.phq?.assessmentCount || 0,
                     "trendDirection": trendData.phq?.direction || "Unknown"
@@ -1070,7 +1084,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
                     "score": getLatestScore("gad"),
                     "maxScore": 21,
                     "severity": getLatestScore("gad") > 15 ? "Severe" : getLatestScore("gad") > 10 ? "Moderate" : "Mild",
-                    "trend": trendData.gad?.trend || "→",
+                    "trend": trendData.gad?.trend || "STABLE",
                     "priority": getLatestScore("gad") > 10 ? "High" : "Medium",
                     "assessmentCount": trendData.gad?.assessmentCount || 0,
                     "trendDirection": trendData.gad?.direction || "Unknown"
@@ -1080,7 +1094,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
                     "score": getLatestScore("who"),
                     "maxScore": 48,
                     "severity": getLatestScore("who") > 30 ? "Severe Impairment" : getLatestScore("who") > 15 ? "Moderate Impairment" : "Mild Impairment",
-                    "trend": trendData.who?.trend || "→",
+                    "trend": trendData.who?.trend || "STABLE",
                     "priority": getLatestScore("who") > 25 ? "High" : "Medium",
                     "assessmentCount": trendData.who?.assessmentCount || 0,
                     "trendDirection": trendData.who?.direction || "Unknown"
@@ -1090,7 +1104,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
                     "score": getLatestScore("ders"),
                     "maxScore": 180,
                     "severity": getLatestScore("ders") > 120 ? "Severe Difficulty" : getLatestScore("ders") > 80 ? "Moderate Difficulty" : "Mild Difficulty",
-                    "trend": trendData.ders?.trend || "→",
+                    "trend": trendData.ders?.trend || "STABLE",
                     "priority": getLatestScore("ders") > 100 ? "High" : "Low",
                     "assessmentCount": trendData.ders?.assessmentCount || 0,
                     "trendDirection": trendData.ders?.direction || "Unknown"
@@ -1119,7 +1133,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
               "score": 43,
               "maxScore": 80,
               "severity": "Moderate",
-              "trend": "→",
+              "trend": "STABLE",
               "priority": "High"
             },
             {
@@ -1127,7 +1141,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
               "score": 11,
               "maxScore": 27,
               "severity": "Moderate",
-              "trend": "→",
+              "trend": "STABLE",
               "priority": "Medium"
             },
             {
@@ -1135,7 +1149,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
               "score": 15,
               "maxScore": 21,
               "severity": "Severe",
-              "trend": "↑",
+              "trend": "UP",
               "priority": "High"
             },
             {
@@ -1143,7 +1157,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
               "score": 18,
               "maxScore": 48,
               "severity": "Moderate Impairment",
-              "trend": "↓",
+              "trend": "DOWN",
               "priority": "Medium"
             },
             {
@@ -1151,7 +1165,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
               "score": 72,
               "maxScore": 180,
               "severity": "Mild Difficulty",
-              "trend": "↓",
+              "trend": "DOWN",
               "priority": "Low"
             }
           ]
@@ -1201,38 +1215,6 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
 
 ================================================================================
 
-**CLINICAL PRIORITIES**
-
-**HIGH PRIORITY (Immediate Attention):**`
-
-          // Generate recommendations based on actual scores
-          const highPriorityItems = tableData.filter(item => item.priority === "High")
-          highPriorityItems.forEach(item => {
-            response += `\n   • ${item.severity} ${item.domain.split('(')[0].trim()} symptoms requiring intervention (${item.score}/${item.maxScore})`
-          })
-
-          response += `
-
-**MEDIUM PRIORITY (Active Monitoring):**`
-
-          const mediumPriorityItems = tableData.filter(item => item.priority === "Medium")
-          mediumPriorityItems.forEach(item => {
-            response += `\n   • ${item.severity} ${item.domain.split('(')[0].trim()} requiring ongoing support (${item.score}/${item.maxScore})`
-          })
-
-          response += `
-
-**LOW PRIORITY (Maintenance):**`
-
-          const lowPriorityItems = tableData.filter(item => item.priority === "Low")
-          lowPriorityItems.forEach(item => {
-            response += `\n   • ${item.domain.split('(')[0].trim()} within manageable range (${item.score}/${item.maxScore})`
-          })
-
-          response += `
-
-================================================================================
-
 **EVIDENCE-BASED CLINICAL RECOMMENDATIONS (DSM-5):**`
 
           // Generate evidence-based clinical recommendations from DSM-5 vector database
@@ -1240,7 +1222,7 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
           
           try {
             // Create assessment breakdown from tableData for DSM-5 recommendations
-            const assessmentBreakdown = {
+            const assessmentBreakdown: { [key: string]: { total_score: number; severity: string; interpretation: string } } = {
               ptsd: {
                 total_score: tableData.find(item => item.domain.includes('PTSD'))?.score || 0,
                 severity: tableData.find(item => item.domain.includes('PTSD'))?.severity || 'Mild',
@@ -1274,36 +1256,150 @@ Remember: Be smart about data fetching but comprehensive in clinical interpretat
             const clinicalRecommendations = await generateContextualRecommendations(assessmentBreakdown);
             
             if (clinicalRecommendations && clinicalRecommendations.length > 0) {
-              // Get priority domains from high priority items
-              const priorityDomains = tableData
-                .filter(item => item.priority === "High")
-                .map(item => item.domain.split('(')[0].trim().replace(' Checklist', '').replace(' Inventory', '').replace(' Scale', ''))
-                .slice(0, 2); // Limit to prevent long strings
+              // Group recommendations by domain
+              const recommendationsByDomain: { [key: string]: typeof clinicalRecommendations } = {};
               
-              // Limit recommendations for PDF compatibility
-              const limitedRecommendations = clinicalRecommendations.slice(0, 3);
-              
-              limitedRecommendations.forEach((rec, index) => {
-                const relevancePercent = Math.round(rec.score * 100);
-                // Allow longer content for complete clinical recommendations
-                const shortTitle = rec.recommendation.title.substring(0, 100) + (rec.recommendation.title.length > 100 ? '...' : '');
-                const shortContent = rec.recommendation.content.substring(0, 300) + (rec.recommendation.content.length > 300 ? '...' : '');
-                
-                response += `
-   ${index + 1}. **${shortTitle}**
-      📋 Domain: ${rec.recommendation.domain} | Category: ${rec.recommendation.category}
-      📊 Clinical Relevance: ${relevancePercent}% | Source: DSM-5
-      📝 ${shortContent}`;
+              clinicalRecommendations.forEach(rec => {
+                const domain = rec.recommendation.domain;
+                if (!recommendationsByDomain[domain]) {
+                  recommendationsByDomain[domain] = [];
+                }
+                recommendationsByDomain[domain].push(rec);
               });
               
-              response += `
+              // Create a clinical treatment plan organized by priority
+              const priorityDomains = tableData
+                .filter(item => item.priority === "High")
+                .map(item => {
+                  if (item.domain.includes('PTSD')) return 'PTSD';
+                  if (item.domain.includes('Anxiety')) return 'Anxiety';
+                  if (item.domain.includes('Depression')) return 'Depression';
+                  if (item.domain.includes('Functional')) return 'Functional';
+                  if (item.domain.includes('Emotion')) return 'Emotion Regulation';
+                  return 'Other';
+                });
               
-💡 **Clinical Actions:**
-   • **Immediate:** Address ${priorityDomains.length > 0 ? priorityDomains.join(' and ') : 'high-priority'} symptoms based on DSM-5 criteria
-   • **Assessment:** Use structured diagnostic interviews per DSM-5 guidelines  
-   • **Treatment:** Implement evidence-based interventions as indicated above
-   • **Monitoring:** Track symptom changes using validated assessment tools
-   • **Follow-up:** Regular reassessment per clinical severity and treatment response`;
+              response += `
+
+📋 **TREATMENT PLAN OVERVIEW**
+
+Based on comprehensive assessment data and DSM-5 guidelines, the following evidence-based treatment plan is recommended:`;
+
+              // First, address high priority domains
+              if (priorityDomains.length > 0) {
+                response += `
+
+🔴 **PRIMARY TREATMENT TARGETS (Immediate Focus)**`;
+                
+                priorityDomains.forEach(domain => {
+                  const domainData = assessmentBreakdown[domain.toLowerCase().replace(' ', '_')] || 
+                                    assessmentBreakdown[domain.toLowerCase()] || 
+                                    assessmentBreakdown[domain === 'PTSD' ? 'ptsd' : domain === 'Anxiety' ? 'gad' : domain === 'Emotion Regulation' ? 'ders' : domain.toLowerCase()];
+                  const domainRecs = recommendationsByDomain[domain] || [];
+                  
+                  if (domainRecs.length > 0) {
+                    const score = domainData?.total_score || 0;
+                    const severity = domainData?.severity || 'Unknown';
+                    
+                    response += `
+
+**${domain.toUpperCase()} (Score: ${score}, Severity: ${severity})**`;
+                    
+                    // Show top 2 recommendations for this domain
+                    domainRecs.slice(0, 2).forEach((rec, idx) => {
+                      const relevancePercent = Math.round(rec.score * 100);
+                      // Format the content for proper display
+                      const formattedContent = rec.recommendation.content
+                        .split('\n')
+                        .map(line => `   ${line}`)
+                        .join('\n');
+                      
+                      response += `
+
+**Treatment Option ${idx + 1}: ${rec.recommendation.category}** (${relevancePercent}% match)
+
+${formattedContent}
+
+   *Implementation Timeline*: Begin within 1-2 weeks`;
+                    });
+                  }
+                });
+              }
+              
+              // Then medium priority domains
+              const mediumDomains = tableData
+                .filter(item => item.priority === "Medium")
+                .map(item => {
+                  if (item.domain.includes('Depression')) return 'Depression';
+                  if (item.domain.includes('Functional')) return 'Functional';
+                  return 'Other';
+                })
+                .filter(d => !priorityDomains.includes(d));
+              
+              if (mediumDomains.length > 0) {
+                response += `
+
+🟡 **SECONDARY TREATMENT TARGETS (Active Monitoring)**`;
+                
+                mediumDomains.forEach(domain => {
+                  const domainRecs = recommendationsByDomain[domain] || [];
+                  if (domainRecs.length > 0) {
+                    response += `
+
+**${domain.toUpperCase()}**`;
+                    domainRecs.slice(0, 1).forEach(rec => {
+                      response += `
+- ${rec.recommendation.content}`;
+                    });
+                  }
+                });
+              }
+              
+              response += `
+
+📊 **INTEGRATED TREATMENT APPROACH**
+
+**Phase 1 (Weeks 1-4): Stabilization & Engagement**
+• Establish therapeutic alliance and treatment goals
+• Begin primary interventions for ${priorityDomains.join(' and ')}
+• Implement safety planning if indicated
+• Start psychoeducation about symptoms and treatment
+
+**Phase 2 (Weeks 5-12): Active Treatment**
+• Intensive therapy for primary targets (2x/week if severe)
+• Monitor medication response if initiated
+• Address functional impairments
+• Begin skills training for emotion regulation
+
+**Phase 3 (Weeks 13+): Consolidation & Maintenance**
+• Reduce session frequency as symptoms improve
+• Focus on relapse prevention
+• Strengthen coping skills
+• Plan for long-term management
+
+💊 **MEDICATION CONSIDERATIONS**
+${clinicalRecommendations.some(r => r.recommendation.category === 'Pharmacotherapy') 
+  ? clinicalRecommendations.find(r => r.recommendation.category === 'Pharmacotherapy')?.recommendation.content || 'Consider pharmacotherapy based on symptom severity'
+  : 'Evaluate need for pharmacotherapy based on treatment response'}
+
+📏 **MONITORING & ASSESSMENT**
+• Re-administer assessments every 4 weeks
+• Track symptom changes using validated scales
+• Monitor treatment adherence and side effects
+• Adjust treatment plan based on response
+
+🎯 **TREATMENT GOALS**
+1. Reduce ${priorityDomains[0]} symptoms by 50% within 12 weeks
+2. Improve functional capacity (WHO-DAS score < 10)
+3. Enhance emotion regulation skills (DERS < 80)
+4. Prevent symptom relapse through maintenance therapy
+
+⚡ **CLINICAL PEARLS**
+• Consider trauma-informed approach given PTSD presentation
+• Address sleep disturbances early (impacts all domains)
+• Screen for substance use as potential coping mechanism
+• Involve family/support system when appropriate`;
+              
             } else {
               // Fallback to generic recommendations if vector search fails
               response += `

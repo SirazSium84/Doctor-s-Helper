@@ -24,13 +24,3 @@ export function getThresholdColor(threshold: "good" | "moderate" | "concerning")
   return colors[threshold]
 }
 
-export function getAssessmentRange(type: AssessmentType): { min: number; max: number } {
-  const ranges = {
-    who: { min: 0, max: 25 },
-    gad: { min: 0, max: 21 },
-    phq: { min: 0, max: 27 },
-    pcl: { min: 0, max: 80 },
-    ders: { min: 0, max: 180 },
-  }
-  return ranges[type]
-}

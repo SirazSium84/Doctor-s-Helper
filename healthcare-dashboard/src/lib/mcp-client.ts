@@ -145,12 +145,21 @@ class MCPClient {
           
           // Try to parse as JSON
           try {
+            // Check if content looks like an error message before parsing
+            if (content.text.startsWith('Internal') || content.text.startsWith('Error') || content.text.startsWith('HTTP')) {
+              console.error(`❌ MCP client received error message:`, content.text.substring(0, 200))
+              return {
+                success: false,
+                error: content.text
+              }
+            }
             const data = JSON.parse(content.text)
             return {
               success: true,
               data
             }
-          } catch {
+          } catch (parseError) {
+            console.warn('Failed to parse MCP response as JSON:', content.text.substring(0, 100))
             // Return as text if not JSON
             return {
               success: true,

@@ -45,15 +45,6 @@ export interface SubstanceHistory {
   treatmentHistory?: string[]
 }
 
-export interface PHPDailyAssessment {
-  patientId: string
-  date: string
-  mood: number // 1-10
-  support: number // 1-10
-  skills: number // 1-10
-  craving: number // 1-10
-  notes: string
-}
 
 export interface AHCMAssessment {
   patientId: string

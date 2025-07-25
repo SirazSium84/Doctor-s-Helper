@@ -144,43 +144,4 @@ export interface BPSAssessment {
   bps_total?: number
 }
 
-export interface PHPSupabaseRow {
-  unique_id: string
-  group_identifier: string
-  assessment_date: string
-  matched_emotion_words?: string
-  match_skill_words?: string
-  match_support_words?: string
-  craving?: string
-  // Emotional states
-  pain?: boolean
-  sad?: boolean
-  content?: boolean
-  anger?: boolean
-  shame?: boolean
-  fear?: boolean
-  joy?: boolean
-  anxiety?: boolean
-  depressed?: boolean
-  alone?: boolean
-  // Coping skills
-  mindfulness_meditation?: boolean
-  distress_tolerance?: boolean
-  opposite_action?: boolean
-  take_my_meds?: boolean
-  ask_for_help?: boolean
-  improve_moment?: boolean
-  parts_work?: boolean
-  play_the_tape_thru?: boolean
-  values?: boolean
-  // Self-care activities
-  sleep?: boolean
-  nutrition?: boolean
-  exercise?: boolean
-  fun?: boolean
-  connection?: boolean
-  warmth?: boolean
-  water?: boolean
-  love?: boolean
-  therapy?: boolean
-} 
+ 

@@ -146,22 +146,26 @@ const styles = StyleSheet.create({
   trendCell: { padding: 5, fontSize: 9, border: "0.5pt solid #e5e7eb", flex: 1, textAlign: "left", backgroundColor: "#ffffff", lineHeight: 1.2 },
   timelineSection: { marginTop: 16, marginBottom: 16 },
   header: {
-    backgroundColor: '#1e40af',
-    padding: 20,
-    marginBottom: 24,
-    borderRadius: 8
+    backgroundColor: '#f8fafc',
+    borderWidth: 2,
+    borderColor: '#1e40af',
+    padding: 24,
+    marginBottom: 32
   },
   headerText: {
-    color: '#ffffff',
-    fontSize: 24,
+    color: '#1e40af',
+    fontSize: 28,
     fontWeight: 'bold',
-    textAlign: 'center'
+    textAlign: 'center',
+    letterSpacing: 2,
+    marginBottom: 8
   },
   subHeaderText: {
-    color: '#dbeafe',
-    fontSize: 12,
+    color: '#374151',
+    fontSize: 14,
     textAlign: 'center',
-    marginTop: 4
+    marginTop: 4,
+    fontWeight: 'normal'
   },
   riskBadge: {
     paddingHorizontal: 12,
@@ -510,9 +514,35 @@ function HeaderPDF() {
   
   return (
     <View style={styles.header}>
+      {/* Top accent line */}
+      <View style={{
+        width: '100%',
+        height: 4,
+        backgroundColor: '#1e40af',
+        marginBottom: 16
+      }} />
+      
       <Text style={styles.headerText}>HEALTHCARE DASHBOARD</Text>
+      
+      {/* Decorative line under main title */}
+      <View style={{
+        width: 120,
+        height: 2,
+        backgroundColor: '#3b82f6',
+        alignSelf: 'center',
+        marginVertical: 8
+      }} />
+      
       <Text style={styles.subHeaderText}>Comprehensive Clinical Assessment Report</Text>
-      <Text style={[styles.subHeaderText, { marginTop: 8 }]}>Generated on {currentDate}</Text>
+      <Text style={[styles.subHeaderText, { marginTop: 12, fontSize: 12, color: '#6b7280', fontStyle: 'italic' }]}>Generated on {currentDate}</Text>
+      
+      {/* Bottom accent line */}
+      <View style={{
+        width: '100%',
+        height: 2,
+        backgroundColor: '#e5e7eb',
+        marginTop: 16
+      }} />
     </View>
   );
 }

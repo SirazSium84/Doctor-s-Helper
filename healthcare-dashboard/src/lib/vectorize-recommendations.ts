@@ -157,10 +157,6 @@ function extractClinicalKeywords(text: string): string[] {
   return keywords.slice(0, 8); // Limit to 8 treatment-focused keywords
 }
 
-// Legacy function for backward compatibility
-function extractKeywords(text: string): string[] {
-  return extractClinicalKeywords(text);
-}
 
 // Generate embeddings for text using OpenAI
 export async function generateEmbedding(text: string): Promise<number[]> {
